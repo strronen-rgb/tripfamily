@@ -1,0 +1,21 @@
+{
+  "name": "TripFamily — מתכנן טיולים משפחתי",
+  "short_name": "TripFamily",
+  "description": "מתכנן טיולים משפחתי — טאילנד, יפן, דרום קוריאה",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F0F23",
+  "theme_color": "#0F0F23",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["travel", "lifestyle"],
+  "shortcuts": [
+    { "name": "ציר זמן", "url": "/he", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "גלה", "url": "/he/explore", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

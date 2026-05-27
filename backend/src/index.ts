@@ -3,17 +3,15 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { prisma } from './src/lib/prisma';
-import { errorHandler } from './src/middleware/errorHandler';
-import authRoutes from './src/routes/auth';
-import familyRoutes from './src/routes/families';
+import { PrismaClient } from '@prisma/client';
 
 const app = express();
+const prisma = new PrismaClient();
 const PORT = process.env.PORT || 4000;
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: false, // Configured in frontend
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -39,17 +37,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/families', familyRoutes);
+// API routes will be added here
+// app.use('/api/auth', authRoutes);
+// app.use('/api/families', familyRoutes);
+// app.use('/api/flights', flightRoutes);
+// app.use('/api/hotels', hotelRoutes);
+// app.use('/api/attractions', attractionRoutes);
+// app.use('/api/expenses', expenseRoutes);
+// app.use('/api/posts', postRoutes);
+// app.use('/api/suggestions', suggestionRoutes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+// Error handling
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('API Error:', err.message);
+  res.status(500).json({ error: 'Internal server error' });
 });
-
-// Global error handler
-app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 TripFamily API running on port ${PORT}`);
