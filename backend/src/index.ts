@@ -7,6 +7,10 @@ import { prisma } from './src/lib/prisma';
 import { errorHandler } from './src/middleware/errorHandler';
 import authRoutes from './src/routes/auth';
 import familyRoutes from './src/routes/families';
+import flightRoutes from './src/routes/flights';
+import hotelRoutes from './src/routes/hotels';
+import attractionRoutes from './src/routes/attractions';
+import timelineRoutes from './src/routes/timeline';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -42,6 +46,10 @@ app.get('/api/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/families', familyRoutes);
+app.use('/api/flights', flightRoutes);
+app.use('/api/hotels', hotelRoutes);
+app.use('/api/attractions', attractionRoutes);
+app.use('/api/timeline', timelineRoutes);
 
 // 404 handler
 app.use((req, res) => {
