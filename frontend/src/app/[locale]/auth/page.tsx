@@ -2,21 +2,31 @@
 
 import { useState, FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 
 type Tab = 'login' | 'register';
 
 export default function AuthPage() {
   const t = useTranslations('Auth');
   const pathname = usePathname();
+  const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
+  const { login, register, loginWithGoogle, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    router.replace(`/${locale}`);
+    return null;
+  }
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
@@ -45,11 +55,33 @@ export default function AuthPage() {
     return Object.keys(newErrors).length === 0;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    // TODO: integrate with API
-    alert('Auth submitted!');
+    setLoading(true);
+    setServerError('');
+    try {
+      if (activeTab === 'login') {
+        await login(email, password);
+      } else {
+        await register(email, password, name);
+      }
+      // Success — AuthProvider will detect session and redirect
+    } catch (err: any) {
+      setServerError(err.message || 'אירעה שגיאה. נסו שוב.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      setServerError(err.message || 'אירעה שגיאה בהתחברות עם Google');
+      setLoading(false);
+    }
   }
 
   const inputClass =
@@ -173,12 +205,25 @@ export default function AuthPage() {
           )}
         </div>
 
+        {/* Server Error */}
+        {serverError && (
+          <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-xl">
+            <p className="text-danger text-xs text-center">{serverError}</p>
+          </div>
+        )}
+
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full mt-8 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:bg-primary-dark active:scale-[0.98] transition-all duration-200"
+          disabled={loading}
+          className="w-full mt-8 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {activeTab === 'login' ? t('loginButton') : t('registerButton')}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              טוען...
+            </span>
+          ) : activeTab === 'login' ? t('loginButton') : t('registerButton')}
         </button>
 
         {/* Divider */}
@@ -191,7 +236,9 @@ export default function AuthPage() {
         {/* Google SSO */}
         <button
           type="button"
-          className="w-full py-3 bg-bg-card border border-border text-text text-sm font-medium rounded-xl hover:bg-bg-surface transition-colors flex items-center justify-center gap-2"
+          disabled={loading}
+          onClick={handleGoogleLogin}
+          className="w-full py-3 bg-bg-card border border-border text-text text-sm font-medium rounded-xl hover:bg-bg-surface transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <svg width="18" height="18" viewBox="0 0 18 18">
             <path d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.89H9v3.56h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.65z" fill="#4285F4"/>
