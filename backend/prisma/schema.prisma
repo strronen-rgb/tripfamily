@@ -23,7 +23,8 @@ model User {
   familyId      String?
   family        Family?   @relation(fields: [familyId], references: [id])
   posts         Post[]
-  expenses      Expense[]
+  expensesPaid  Expense[] @relation("expense_paid_by")
+  expenses      Expense[] @relation("expense_created_by")
   notifications Notification[]
   sessions      Session[]
   accounts      Account[]
@@ -146,7 +147,9 @@ model Expense {
   description String?
   receiptUrl  String?
   paidBy      String
+  paidByUser  User?    @relation("expense_paid_by", fields: [paidBy], references: [id])
   createdBy   String
+  createdByUser User?  @relation("expense_created_by", fields: [createdBy], references: [id])
   createdAt   DateTime @default(now())
 
   @@map("expenses")

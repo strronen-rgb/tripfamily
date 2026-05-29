@@ -29,7 +29,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
       }),
       prisma.hotel.findMany({
         where: { familyId },
-        orderBy: { checkIn: 'asc' }),
+        orderBy: { checkIn: 'asc' },
       }),
       prisma.attraction.findMany({
         where: { familyId },
