@@ -1,8 +1,0 @@
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://tripfamily-api.onrender.com/api/$1" }
-  ]
-}
