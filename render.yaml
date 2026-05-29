@@ -3,7 +3,7 @@ services:
     name: tripfamily-api
     runtime: node
     plan: free
-    buildCommand: cd backend && npm ci --production && npx prisma generate && npx tsc
+    buildCommand: cd backend && npm install && npx prisma generate && npx tsc
     startCommand: cd backend && npx prisma migrate deploy && npm start
     envVars:
       - key: NODE_ENV

@@ -3,6 +3,16 @@ import * as auth from '../lib/auth';
 import { prisma } from '../lib/prisma';
 import { BadRequestError, UnauthorizedError } from '../lib/errors';
 
+// Minimal type for Google tokeninfo response
+interface GoogleTokenInfo {
+  email?: string;
+  name?: string;
+  picture?: string;
+  aud?: string;
+  error_description?: string;
+  [key: string]: unknown;
+}
+
 const router = Router();
 
 // Helper: find or create user from Google profile
@@ -52,10 +62,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // Verify with Google's tokeninfo endpoint
       const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
       const googleRes = await fetch(tokenInfoUrl);
-      const tokenInfo = await googleRes.json();
+      const tokenInfo = await googleRes.json() as GoogleTokenInfo;
 
       if (tokenInfo.error_description) {
-        throw new UnauthorizedError('Google token verification failed: ' + tokenInfo.error_description);
+        throw new UnauthorizedError('Google token verification failed: ' + String(tokenInfo.error_description));
       }
 
       // Verify the token was issued for our app
@@ -65,9 +75,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       }
 
       profile = {
-        email: tokenInfo.email,
-        name: tokenInfo.name || tokenInfo.email.split('@')[0],
-        picture: tokenInfo.picture,
+        email: String(tokenInfo.email),
+        name: String(tokenInfo.name || String(tokenInfo.email).split('@')[0]),
+        picture: tokenInfo.picture ? String(tokenInfo.picture) : undefined,
       };
     } catch (e) {
       if (e instanceof UnauthorizedError || e instanceof BadRequestError) throw e;
