@@ -14,7 +14,7 @@ export const loginSchema = z.object({
 
 export const createFamilySchema = z.object({
   name: z.string().min(2, 'שם חייב להכיל לפחות 2 תווים'),
-  destinations: z.array(z.string()).min 1, 'יש לבחור לפחות יעד אחד'),
+  destinations: z.array(z.string()).min(1, 'יש לבחור לפחות יעד אחד'),
 });
 
 export const joinFamilySchema = z.object({
