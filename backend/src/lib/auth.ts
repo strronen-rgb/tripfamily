@@ -32,3 +32,13 @@ export function generateInviteCode(): string {
   }
   return code;
 }
+
+// Re-export as namespace for compatibility
+export const auth = {
+  hashPassword,
+  verifyPassword,
+  signToken,
+  verifyToken,
+  comparePassword,
+  generateInviteCode,
+};
