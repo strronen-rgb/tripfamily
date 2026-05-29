@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { prisma } from './src/lib/prisma';
 import { errorHandler } from './src/middleware/errorHandler';
 import authRoutes from './src/routes/auth';
+import googleAuthRoutes from './src/routes/googleAuth';
 import familyRoutes from './src/routes/families';
 import flightRoutes from './src/routes/flights';
 import hotelRoutes from './src/routes/hotels';
@@ -46,6 +47,7 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/google', googleAuthRoutes);
 app.use('/api/families', familyRoutes);
 app.use('/api/flights', flightRoutes);
 app.use('/api/hotels', hotelRoutes);

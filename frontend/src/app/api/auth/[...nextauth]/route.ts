@@ -1,9 +1,8 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,23 +18,62 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-        if (!user || !user.passwordHash) return null;
-        const bcrypt = await import('bcryptjs');
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) return null;
-        return { id: user.id, email: user.email, name: user.name, image: user.avatarUrl };
+        try {
+          const res = await fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.data) return null;
+          return {
+            id: data.data.user.id,
+            email: data.data.user.email,
+            name: data.data.user.name,
+            image: data.data.user.avatarUrl,
+            token: data.data.token,
+          };
+        } catch {
+          return null;
+        }
       },
     }),
   ],
   session: { strategy: 'jwt' },
   pages: { signIn: '/auth' },
   callbacks: {
-    async jwt({ token, user }) { if (user) token.id = user.id; return token; },
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+        token.accessToken = (user as any).token;
+      }
+      // Handle Google OAuth — send credential to our backend
+      if (account?.provider === 'google' && account.id_token) {
+        try {
+          const res = await fetch(`${API_URL}/api/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              credential: account.id_token,
+              clientId: process.env.GOOGLE_CLIENT_ID,
+            }),
+          });
+          const data = await res.json();
+          if (res.ok && data.data) {
+            token.id = data.data.user.id;
+            token.accessToken = data.data.token;
+          }
+        } catch {
+          // Silently fall back — user can retry
+        }
+      }
+      return token;
+    },
     async session({ session, token }) {
-      if (session.user) (session.user as any).id = token.id;
+      if (session.user) {
+        (session.user as any).id = token.id;
+        (session.user as any).accessToken = token.accessToken;
+      }
       return session;
     },
   },
