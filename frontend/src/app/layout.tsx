@@ -1,9 +1,6 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { SessionProvider } from 'next-auth/react';
-import { AuthProvider } from '../src/lib/auth';
-import { authOptions } from './api/auth/[...nextauth]/route';
+import { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata = {
@@ -29,6 +26,8 @@ export const viewport = {
   themeColor: '#0F0F23',
 };
 
+import { AuthProvider } from '../lib/auth';
+
 export default async function RootLayout({
   children,
   params: { locale },
@@ -43,8 +42,6 @@ export default async function RootLayout({
     notFound();
   }
 
-  const session = await getServerSession(authOptions);
-
   return (
     <html lang={locale} dir="rtl">
       <head>
@@ -55,13 +52,11 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body>
-        <SessionProvider session={session}>
-          <AuthProvider>
-            <NextIntlClientProvider locale={locale} messages={messages}>
-              {children}
-            </NextIntlClientProvider>
-          </AuthProvider>
-        </SessionProvider>
+        <AuthProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            {children}
+          </NextIntlClientProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react';
 
 interface User {
   id: string;
@@ -19,9 +18,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,32 +26,25 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sync with NextAuth session
+  // Check for existing session in localStorage
   useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      const u = session.user as any;
-      setUser({
-        id: u.id || u.sub,
-        email: u.email || '',
-        name: u.name || '',
-        avatarUrl: u.image || u.avatarUrl,
-        role: u.role || 'MEMBER',
-        familyId: u.familyId,
-      });
-      setToken(u.accessToken || null);
-    } else if (status === 'unauthenticated') {
-      setUser(null);
-      setToken(null);
+    const savedToken = localStorage.getItem('tripfamily_token');
+    const savedUser = localStorage.getItem('tripfamily_user');
+    if (savedToken && savedUser) {
+      try {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('tripfamily_token');
+        localStorage.removeItem('tripfamily_user');
+      }
     }
-    if (status !== 'loading') {
-      setLoading(false);
-    }
-  }, [session, status]);
+    setLoading(false);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -64,13 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed');
-    // Sign in via NextAuth
-    const result = await nextAuthSignIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
-    if (result?.error) throw new Error(result.error);
+    
+    const { user: u, token: t } = data.data;
+    setUser(u);
+    setToken(t);
+    localStorage.setItem('tripfamily_token', t);
+    localStorage.setItem('tripfamily_user', JSON.stringify(u));
   }, []);
 
   const register = useCallback(async (email: string, password: string, name: string) => {
@@ -81,37 +70,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Registration failed');
+    
     // Auto-login after register
-    const result = await nextAuthSignIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
-    if (result?.error) throw new Error(result.error);
-  }, []);
-
-  const loginWithGoogle = useCallback(async () => {
-    await nextAuthSignIn('google', { callbackUrl: '/' });
+    const { user: u, token: t } = data.data;
+    setUser(u);
+    setToken(t);
+    localStorage.setItem('tripfamily_token', t);
+    localStorage.setItem('tripfamily_user', JSON.stringify(u));
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch(`${API_URL}/api/auth/logout`, { method: 'POST' });
-    await nextAuthSignOut({ callbackUrl: '/auth' });
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, { 
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
     setUser(null);
     setToken(null);
-  }, []);
-
-  const refreshUser = useCallback(async () => {
-    if (!token) return;
-    const res = await fetch(`${API_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.data?.user) {
-        setUser(data.data.user);
-      }
-    }
+    localStorage.removeItem('tripfamily_token');
+    localStorage.removeItem('tripfamily_user');
   }, [token]);
 
   return (
@@ -123,9 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         login,
         register,
-        loginWithGoogle,
         logout,
-        refreshUser,
       }}
     >
       {children}
