@@ -91,6 +91,26 @@ export const updateAttractionSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+// ── Expense schemas ──────────────────────────────────────────────────────────
+export const createExpenseSchema = z.object({
+  familyId: z.string().min(1, 'Family ID is required'),
+  category: z.string().min(1, 'Category is required'),
+  amount: z.number().positive('Amount must be positive'),
+  currency: z.string().length(3).optional(),
+  description: z.string().optional(),
+  receiptUrl: z.string().url().optional(),
+  paidBy: z.string().optional(),
+});
+
+export const updateExpenseSchema = z.object({
+  category: z.string().optional(),
+  amount: z.number().positive().optional(),
+  currency: z.string().length(3).optional(),
+  description: z.string().optional().nullable(),
+  receiptUrl: z.string().url().optional().nullable(),
+  paidBy: z.string().optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateFamilyInput = z.infer<typeof createFamilySchema>;
@@ -101,3 +121,5 @@ export type CreateHotelInput = z.infer<typeof createHotelSchema>;
 export type UpdateHotelInput = z.infer<typeof updateHotelSchema>;
 export type CreateAttractionInput = z.infer<typeof createAttractionSchema>;
 export type UpdateAttractionInput = z.infer<typeof updateAttractionSchema>;
+export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
+export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;

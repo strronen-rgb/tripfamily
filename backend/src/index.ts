@@ -11,6 +11,7 @@ import flightRoutes from './src/routes/flights';
 import hotelRoutes from './src/routes/hotels';
 import attractionRoutes from './src/routes/attractions';
 import timelineRoutes from './src/routes/timeline';
+import budgetRoutes from './src/routes/budget';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -50,6 +51,7 @@ app.use('/api/flights', flightRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/attractions', attractionRoutes);
 app.use('/api/timeline', timelineRoutes);
+app.use('/api/budget', budgetRoutes);
 
 // 404 handler
 app.use((req, res) => {
