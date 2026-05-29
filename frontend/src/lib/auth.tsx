@@ -18,6 +18,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -79,6 +80,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('tripfamily_user', JSON.stringify(u));
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    // Google OAuth — redirect to Google's consent window
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!googleClientId) throw new Error('Google Client ID not configured');
+    
+    const redirectUri = `${window.location.origin}/api/auth/callback/google`;
+    const scope = 'openid email profile';
+    const state = Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('oauth_state', state);
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&access_type=offline`;
+    
+    window.location.href = authUrl;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await fetch(`${API_URL}/api/auth/logout`, { 
@@ -101,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         login,
         register,
+        loginWithGoogle,
         logout,
       }}
     >
