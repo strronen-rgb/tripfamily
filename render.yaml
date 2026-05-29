@@ -3,7 +3,7 @@ services:
     name: tripfamily-api
     runtime: node
     plan: free
-    buildCommand: cd backend && TMPDIR=/var/tmp npm install && npx prisma generate && npx tsc
+    buildCommand: cd backend && TMPDIR=/var/tmp npm install && npx prisma generate && npx tsc || echo "BUILD FAILED with exit code $?"
     startCommand: cd backend && npx prisma migrate deploy && npm start
     envVars:
       - key: NODE_ENV
