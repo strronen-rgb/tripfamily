@@ -1,4 +1,3 @@
-import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 import LocaleLayoutInner from './layout-client';
@@ -10,18 +9,16 @@ export default async function LocaleLayout({
   children: ReactNode;
   params: { locale: string };
 }) {
-  let messages;
+  // Verify locale exists
   try {
-    messages = (await import(`../../../messages/${locale}.json`)).default;
+    await import(`../../../messages/${locale}.json`);
   } catch (error) {
     notFound();
   }
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <LocaleLayoutInner locale={locale}>
-        {children}
-      </LocaleLayoutInner>
-    </NextIntlClientProvider>
+    <LocaleLayoutInner locale={locale}>
+      {children}
+    </LocaleLayoutInner>
   );
 }

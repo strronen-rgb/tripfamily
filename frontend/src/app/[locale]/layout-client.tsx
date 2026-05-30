@@ -1,15 +1,14 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { ReactNode } from 'react';
 
 const tabs = [
-  { href: '', icon: '🏠', labelKey: 'Home.title' },
-  { href: '/explore', icon: '🌏', labelKey: 'Explore.title' },
-  { href: '/bookings', icon: '📋', labelKey: 'Bookings.title' },
-  { href: '/budget', icon: '💰', labelKey: 'Budget.title' },
-  { href: '/profile', icon: '👤', labelKey: 'Profile.title' },
+  { href: '', icon: '🏠', labelKey: 'Home' },
+  { href: '/explore', icon: '🌏', labelKey: 'Explore' },
+  { href: '/bookings', icon: '📋', labelKey: 'Bookings' },
+  { href: '/budget', icon: '💰', labelKey: 'Budget' },
+  { href: '/profile', icon: '👤', labelKey: 'Profile' },
 ] as const;
 
 export default function LocaleLayoutInner({
@@ -20,7 +19,6 @@ export default function LocaleLayoutInner({
   locale: string;
 }) {
   const pathname = usePathname();
-  const t = useTranslations();
 
   const currentPath = pathname.replace(`/${locale}`, '') || '/';
 
@@ -52,7 +50,7 @@ export default function LocaleLayoutInner({
                   {tab.icon}
                 </span>
                 <span className={`text-[10px] font-medium ${isActive ? 'text-primary' : ''}`}>
-                  {t(tab.labelKey)}
+                  {tab.labelKey}
                 </span>
               </a>
             );
