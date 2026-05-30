@@ -1,0 +1,135 @@
+# TripFamily Progress Tracker
+# Updated: 2026-05-30
+# Format: [ ] = pending, [x] = done, [~] = in progress, [!] = blocked
+
+## Phase 0: Planning & Architecture [x]
+- [x] Project structure (frontend/backend/docs)
+- [x] Tech stack definition
+- [x] Database schema (Prisma)
+- [x] API route planning
+- [x] UI/UX wireframes
+- [x] Frontend on Vercel
+- [x] Backend on Render
+
+## Phase 1: Foundation & Auth [~]
+- [x] Next.js 14 frontend deployment (Vercel)
+- [x] Express backend deployment (Render)
+- [x] PostgreSQL (Neon) + Prisma setup
+- [x] Basic page layouts (Home, Explore, Bookings, Budget, Profile)
+- [x] RootLayout locale fix (no params dependency)
+- [x] next-intl v3 App Router setup
+- [x] Inline styles replacing broken Tailwind CSS
+- [x] Backend API routes (auth, flights, hotels, attractions, budget, timeline)
+- [ ] Google OAuth login (NextAuth setup exists, frontend not connected)
+- [ ] User registration (backend route exists, frontend not connected)
+- [ ] Login page UI with proper auth flow
+- [ ] Protected routes middleware
+- [ ] Logout functionality
+- [ ] Auth error handling (login failures, session expiry)
+- [ ] Password reset flow
+- [ ] Email verification
+
+## Phase 2: Trip Management Core [ ]
+- [ ] Create new trip form
+- [ ] Edit trip details
+- [ ] Delete trip
+- [ ] Trip list view
+- [ ] Trip detail page
+- [ ] Trip members management
+- [ ] Trip dates/duration picker
+- [ ] Save/load trips from database
+- [ ] Trip cover image upload
+- [ ] Trip status (planning/live/completed)
+- [ ] Search/filter trips
+- [ ] Trip duplication (copy existing trip)
+
+## Phase 3: Travel Suggestions Engine [ ]
+- [ ] Destinations database (Thailand, Japan, Korea seed data)
+- [ ] [x] Explore page basic UI with filters
+- [ ] Search destinations by name/country
+- [ ] AI-powered travel recommendations
+- [ ] Save suggestions to trip
+- [ ] Attractions API integration (real data)
+- [ ] Destination detail page (photos, tips, weather)
+- [ ] Seasonal recommendations
+- [ ] Family-friendly filtering
+- [ ] Popular destinations carousel
+
+## Phase 4: Social Media Aggregation [ ]
+- [ ] Instagram API integration (travel hashtags)
+- [ ] TikTok API integration (travel content)
+- [ ] Social media feed component
+- [ ] Save social content to trip
+- [ ] Share trip to social media
+- [ ] Content moderation/safety filter
+- [ ] Social content caching
+- [ ] Map integration (show content by location)
+
+## Phase 5: Collaboration & Sharing [ ]
+- [ ] Family group creation
+- [ ] Invite family members (email/link)
+- [ ] Role-based permissions (admin/member/viewer)
+- [ ] Real-time collaboration (WebSockets/polling)
+- [ ] Trip sharing via link
+- [ ] Comments on trip items
+- [ ] Family member profiles
+- [ ] Activity log (who changed what)
+- [ ] Leave/join family group
+
+## Phase 6: Budget Planner [ ]
+- [ ] [x] Budget page basic UI
+- [ ] Add expense form
+- [ ] Expense categories (flights, hotels, food, transport, shopping, other)
+- [ ] Budget tracking per trip
+- [ ] Currency conversion (USD/ILS/THB/JPY/KRW)
+- [ ] Budget reports & charts (spending breakdown)
+- [ ] Shared family budget (multiple contributors)
+- [ ] Expense receipt photo upload
+- [ ] Budget alerts (approaching limit)
+- [ ] Export budget to CSV/PDF
+- [ ] Per-person cost splitting
+
+## Phase 7: Media & App Store [ ]
+- [x] PWA manifest
+- [x] iOS home screen meta tags
+- [ ] PWA icons (all sizes: 192x192, 512x512, maskable)
+- [ ] App screenshots for store
+- [ ] Offline mode (service worker)
+- [ ] Push notifications
+- [ ] Image upload to Cloudinary
+- [ ] Trip photo gallery
+- [ ] Light/dark theme toggle
+- [ ] RTL full support verification
+
+## Phase 8: Polish & Launch [ ]
+- [x] Responsive mobile-first design
+- [x] SEO meta tags
+- [ ] Performance optimization (Lighthouse > 90)
+- [ ] Loading states (skeleton screens)
+- [ ] Error handling (404, 500, network errors)
+- [ ] Empty states ("no trips yet" etc.)
+- [ ] Unit tests (backend API)
+- [ ] E2E tests (critical flows)
+- [ ] Accessibility audit (WCAG 2.1)
+- [ ] Rate limiting on API
+- [ ] Input sanitization
+- [ ] Privacy policy / Terms of service
+- [ ] Analytics integration
+
+---
+
+## Current Status
+- Overall: 10/54 tasks (19%)
+- Current focus: Phase 1 (Foundation & Auth)
+- Last update: 2026-05-30
+- Next milestone: Complete Google OAuth login flow
+
+## Blocked Items
+- Waiting for: Google OAuth credentials setup
+- Needs: DATABASE_URL configured on Render (verify connection)
+
+## Notes
+- Tailwind CSS not working on Vercel — replaced with inline styles
+- Backend routes exist but not connected to frontend
+- Auth uses localStorage (not ideal for production, plan to migrate to httpOnly cookies)
+- NextAuth configured in /api/auth/[...nextauth]/route.ts but frontend doesn't call it yet
