@@ -1,123 +1,89 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 
 type Filter = 'all' | 'thailand' | 'japan' | 'korea';
 
 interface Suggestion {
   id: string;
-  titleHe: string;
-  titleEn: string;
+  title: string;
+  country: string;
+  desc: string;
+  image: string;
   category: string;
-  categoryKey: string;
-  rating: number;
-  filter: Filter;
-  emoji: string;
 }
 
 const suggestions: Suggestion[] = [
-  { id: '1', titleHe: 'אי הנחש קוה פקאד', titleEn: 'Phuket', category: 'beach', categoryKey: 'Explore.attractions', rating: 4.8, filter: 'thailand', emoji: '🏖️' },
-  { id: '2', titleHe: 'שוק צהריים בבנגקוק', titleEn: 'Chatuchak Market', category: 'shopping', categoryKey: 'Explore.shopping', rating: 4.6, filter: 'thailand', emoji: '🛍️' },
-  { id: '3', titleHe: 'מקדש פוטו בקואלה לומפור', titleEn: 'Batul Cave', category: 'culture', categoryKey: 'Explore.culture', rating: 4.5, filter: 'thailand', emoji: '🛕' },
-  { id: '4', titleHe: 'פוג\'ודה פוטו', titleEn: 'Tokyo', category: 'culture', categoryKey: 'Explore.culture', rating: 4.9, filter: 'japan', emoji: '⛩️' },
-  { id: '5', titleHe: 'הר פוג\'י', titleEn: 'Mount Fuji', category: 'nature', categoryKey: 'Explore.attractions', rating: 4.9, filter: 'japan', emoji: '🗻' },
-  { id: '6', titleHe: 'דיסנילנד טוקיו', titleEn: 'Tokyo Disneyland', category: 'family', categoryKey: 'Explore.attractions', rating: 4.7, filter: 'japan', emoji: '🏰' },
-  { id: '7', titleHe: 'ארמון גיונגבוקגונג', titleEn: 'Gyeongbokgung Palace', category: 'culture', categoryKey: 'Explore.culture', rating: 4.6, filter: 'korea', emoji: '🏯' },
-  { id: '8', titleHe: 'אי ג\'ג\'ו', titleEn: 'Jeju Island', category: 'nature', categoryKey: 'Explore.attractions', rating: 4.8, filter: 'korea', emoji: '🏝️' },
+  { id:'1', title:'בנגקוק', country:'thailand', desc:'עיר הבירה התוססת של תאילנד', image:'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=400', category:'attractions' },
+  { id:'2', title:'קוסו גארדן', country:'thailand', desc:'גן לאומי עם יערות דקלים מרהיבים', image:'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?w=400', category:'attractions' },
+  { id:'3', title:'טוקיו', country:'japan', desc:'מטרופולין ענק עם מסורת וטכנולוגיה', image:'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400', category:'attractions' },
+  { id:'4', title:'אוסקה', country:'japan', desc:'עיר הבירה הקוליארית של יפן', image:'https://images.unsplash.com/photo-1590559899731-a382839e5549?w=400', category:'food' },
+  { id:'5', title:'סיאול', country:'korea', desc:'עיר דינמית עם היסטוריה עשירה', image:'https://images.unsplash.com/photo-1538485399081-7191377e8241?w=400', category:'culture' },
+  { id:'6', title:'פוסן', country:'korea', desc:'עים חופית עם נופים מרהיבים', image:'https://images.unsplash.com/photo-1601621915196-528e9be19090?w=400', category:'attractions' },
 ];
 
-const filters: { key: Filter; labelKey: string }[] = [
-  { key: 'all', labelKey: 'Explore.all' },
-  { key: 'thailand', labelKey: 'Explore.thailand' },
-  { key: 'japan', labelKey: 'Explore.japan' },
-  { key: 'korea', labelKey: 'Explore.korea' },
+const filters: { key: Filter; label: string; icon: string }[] = [
+  { key:'all', label:'הכל', icon:'🌍' },
+  { key:'thailand', label:'תאילנד', icon:'🇹🇭' },
+  { key:'japan', label:'יפן', icon:'🇯🇵' },
+  { key:'korea', label:'קוריאה', icon:'🇰🇷' },
 ];
 
 export default function ExplorePage() {
-  const t = useTranslations();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'he';
   const [activeFilter, setActiveFilter] = useState<Filter>('all');
 
-  const filtered = activeFilter === 'all'
-    ? suggestions
-    : suggestions.filter((s) => s.filter === activeFilter);
+  const filtered = activeFilter === 'all' ? suggestions : suggestions.filter(s => s.country === activeFilter);
+  const currentPath = pathname.replace(`/${locale}`, '') || '/';
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div style={{minHeight:'100vh',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl'}}>
       {/* Header */}
-      <header className="safe-top sticky top-0 z-40 bg-bg-card/90 backdrop-blur-lg border-b border-border">
-        <div className="px-4 py-3">
-          <h1 className="text-xl font-bold text-text">{t('Explore.title')}</h1>
-          <p className="text-xs text-text-muted">{t('Explore.subtitle')}</p>
-        </div>
+      <header style={{position:'sticky',top:0,zIndex:40,background:'rgba(26,26,46,0.9)',backdropFilter:'blur(16px)',borderBottom:'1px solid rgba(255,255,255,0.08)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <h1 style={{fontSize:'20px',fontWeight:700,color:'#6C63FF',margin:0}}>✈️ TripFamily</h1>
+        <span style={{fontSize:'12px',color:'#94A3B8'}}>גלה יעדים</span>
       </header>
 
-      {/* Filter Tabs */}
-      <div className="px-4 py-3 overflow-x-auto">
-        <div className="flex gap-2">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setActiveFilter(f.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-                activeFilter === f.key
-                  ? 'bg-primary text-white shadow-md shadow-primary/30'
-                  : 'bg-bg-card border border-border text-text-muted hover:text-text'
-              }`}
-            >
-              {t(f.labelKey)}
+      <main style={{padding:'16px',paddingBottom:'80px'}}>
+        {/* Hero */}
+        <div style={{background:'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(255,107,107,0.1))',borderRadius:'20px',padding:'24px',marginBottom:'24px',textAlign:'center'}}>
+          <h2 style={{fontSize:'24px',fontWeight:700,margin:'0 0 8px 0'}}>🌏 גלה יעדים חדשים</h2>
+          <p style={{fontSize:'14px',color:'#94A3B8',margin:0}}>גלו מקומות חדשים לטיול המשפחתי הבא</p>
+        </div>
+
+        {/* Filters */}
+        <div style={{display:'flex',gap:'8px',marginBottom:'24px',overflowX:'auto'}}>
+          {filters.map(f => (
+            <button key={f.key} onClick={() => setActiveFilter(f.key)} style={{
+              padding:'8px 16px', borderRadius:'20px', border:'1px solid',
+              borderColor: activeFilter === f.key ? '#6C63FF' : 'rgba(255,255,255,0.08)',
+              background: activeFilter === f.key ? 'rgba(108,99,255,0.2)' : 'rgba(26,26,46,0.8)',
+              color: activeFilter === f.key ? '#6C63FF' : '#94A3B8',
+              fontSize:'14px', fontWeight:500, cursor:'pointer', whiteSpace:'nowrap'
+            }}>
+              {f.icon} {f.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Grid */}
-      <main className="px-4 pb-6">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="text-5xl mb-4 opacity-50">🔍</div>
-            <p className="text-text-muted">אין תוצאות</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {filtered.map((item) => (
-              <div
-                key={item.id}
-                className="bg-bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/30 transition-all group"
-              >
-                {/* Card Image Area */}
-                <div className="relative h-28 bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center">
-                  <span className="text-4xl group-hover:scale-110 transition-transform duration-300">
-                    {item.emoji}
-                  </span>
-                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-bg/80 backdrop-blur-sm rounded-full">
-                    <span className="text-[10px] text-text-muted flex items-center gap-0.5">
-                      ⭐ {item.rating}
-                    </span>
-                  </div>
-                  <div className="absolute top-2 right-2 px-2 py-0.5 bg-primary/90 backdrop-blur-sm rounded-full">
-                    <span className="text-[10px] text-white font-medium">
-                      {t(item.categoryKey)}
-                    </span>
-                  </div>
+        {/* Suggestions Grid */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'12px'}}>
+          {filtered.map(item => (
+            <a key={item.id} href={`/${locale}/explore/${item.id}`} style={{display:'block',textDecoration:'none',color:'inherit'}}>
+              <div style={{background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',overflow:'hidden',transition:'transform 0.2s'}}>
+                <div style={{width:'100%',height:'120px',background:'#252540',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'48px'}}>
+                  {item.country === 'thailand' ? '🇹🇭' : item.country === 'japan' ? '🇯🇵' : '🇰🇷'}
                 </div>
-
-                {/* Card Info */}
-                <div className="p-3">
-                  <h3 className="text-sm font-semibold text-text mb-2 leading-tight">
-                    {locale === 'he' ? item.titleHe : item.titleEn}
-                  </h3>
-                  <button className="w-full py-2 bg-primary/10 text-primary text-xs font-semibold rounded-lg hover:bg-primary/20 transition-colors">
-                    {t('Explore.addToTrip')}
-                  </button>
+                <div style={{padding:'12px'}}>
+                  <h3 style={{fontSize:'14px',fontWeight:600,margin:'0 0 4px 0'}}>{item.title}</h3>
+                  <p style={{fontSize:'12px',color:'#94A3B8',margin:0}}>{item.desc}</p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </a>
+          ))}
+        </div>
       </main>
     </div>
   );

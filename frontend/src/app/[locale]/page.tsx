@@ -1,110 +1,91 @@
-'use client';
-
-import Link from 'next/link';
-import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import React from 'react';
 
 export default function HomePage() {
-  const t = useTranslations('Home');
-  const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'he';
-
   return (
-    <div className="min-h-screen bg-bg">
+    <div style={{minHeight:'100vh',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl'}}>
       {/* Header */}
-      <header className="safe-top sticky top-0 z-40 bg-bg-card/90 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold text-primary">✈️ TripFamily</h1>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted">🌏 Thailand • Japan • Korea</span>
-          </div>
-        </div>
+      <header style={{position:'sticky',top:0,zIndex:40,background:'rgba(26,26,46,0.9)',backdropFilter:'blur(16px)',borderBottom:'1px solid rgba(255,255,255,0.08)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <h1 style={{fontSize:'20px',fontWeight:700,color:'#6C63FF',margin:0}}>✈️ TripFamily</h1>
+        <span style={{fontSize:'12px',color:'#94A3B8'}}>🌏 Thailand • Japan • Korea</span>
       </header>
 
-      {/* Content */}
-      <main className="px-4 py-6">
-        {/* Welcome Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-1 bg-gradient-to-l from-primary to-secondary bg-clip-text text-transparent">
-            {t('welcome')}
-          </h2>
-          <p className="text-text-muted text-sm">Plan your perfect family trip</p>
-        </div>
+      {/* Hero Section */}
+      <section style={{padding:'32px 16px',textAlign:'center',background:'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(255,107,107,0.1) 100%)'}}>
+        <h2 style={{fontSize:'32px',fontWeight:700,margin:'0 0 8px 0',background:'linear-gradient(to left, #6C63FF, #FF6B6B)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+          ברוכים הבאים לטיול הבא שלכם! 🌏
+        </h2>
+        <p style={{color:'#94A3B8',fontSize:'14px',margin:0}}>Plan your perfect family trip</p>
+      </section>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-gradient-to-br from-bg-card to-bg-surface rounded-xl p-4 text-center border border-border animate-fadeInUp">
-            <div className="text-2xl mb-1">✈️</div>
-            <div className="text-2xl font-bold text-primary font-mono">0</div>
-            <div className="text-xs text-text-muted">{t('flights')}</div>
+      {/* Quick Stats */}
+      <section style={{padding:'0 16px 24px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px'}}>
+          <div style={{background:'linear-gradient(135deg, #1A1A2E, #252540)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'16px',textAlign:'center'}}>
+            <div style={{fontSize:'24px',marginBottom:'4px'}}>✈️</div>
+            <div style={{fontSize:'24px',fontWeight:700,color:'#6C63FF',fontFamily:'JetBrains Mono,monospace'}}>0</div>
+            <div style={{fontSize:'12px',color:'#94A3B8'}}>טיסות</div>
           </div>
-          <div className="bg-gradient-to-br from-bg-card to-bg-surface rounded-xl p-4 text-center border border-border animate-fadeInUp" style={{ animationDelay: '100ms' }}>
-            <div className="text-2xl mb-1">🏨</div>
-            <div className="text-2xl font-bold text-success font-mono">0</div>
-            <div className="text-xs text-text-muted">{t('hotels')}</div>
+          <div style={{background:'linear-gradient(135deg, #1A1A2E, #252540)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'16px',textAlign:'center'}}>
+            <div style={{fontSize:'24px',marginBottom:'4px'}}>🏨</div>
+            <div style={{fontSize:'24px',fontWeight:700,color:'#10B981',fontFamily:'JetBrains Mono,monospace'}}>0</div>
+            <div style={{fontSize:'12px',color:'#94A3B8'}}>מלונות</div>
           </div>
-          <div className="bg-gradient-to-br from-bg-card to-bg-surface rounded-xl p-4 text-center border border-border animate-fadeInUp" style={{ animationDelay: '200ms' }}>
-            <div className="text-2xl mb-1">🎯</div>
-            <div className="text-2xl font-bold text-secondary font-mono">0</div>
-            <div className="text-xs text-text-muted">{t('attractions')}</div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-6">
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href={`/${locale}/explore`}
-              className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl p-4 border border-primary/20 hover:border-primary/40 transition-all group"
-            >
-              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">🌏</div>
-              <div className="text-sm font-semibold text-primary">גלה יעדים</div>
-              <div className="text-xs text-text-muted">המלצות טיול</div>
-            </Link>
-            <Link
-              href={`/${locale}/budget`}
-              className="bg-gradient-to-br from-success/20 to-success/5 rounded-xl p-4 border border-success/20 hover:border-success/40 transition-all group"
-            >
-              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">💰</div>
-              <div className="text-sm font-semibold text-success">נהל תקציב</div>
-              <div className="text-xs text-text-muted">עקוב אחר הוצאות</div>
-            </Link>
+          <div style={{background:'linear-gradient(135deg, #1A1A2E, #252540)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'16px',textAlign:'center'}}>
+            <div style={{fontSize:'24px',marginBottom:'4px'}}>🎯</div>
+            <div style={{fontSize:'24px',fontWeight:700,color:'#FF6B6B',fontFamily:'JetBrains Mono,monospace'}}>0</div>
+            <div style={{fontSize:'12px',color:'#94A3B8'}}>אטרקציות</div>
           </div>
         </div>
+      </section>
 
-        {/* Upcoming Events Timeline */}
-        <div className="bg-bg-card rounded-2xl p-4 border border-border">
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span>📅</span>
-            {t('upcoming')}
+      {/* Quick Actions */}
+      <section style={{padding:'0 16px 24px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'12px'}}>
+          <a href="/he/explore" style={{display:'block',background:'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(108,99,255,0.05))',border:'1px solid rgba(108,99,255,0.2)',borderRadius:'16px',padding:'16px',textAlign:'center',textDecoration:'none',color:'inherit'}}>
+            <div style={{fontSize:'24px',marginBottom:'8px'}}>🌏</div>
+            <div style={{fontSize:'14px',fontWeight:600,color:'#6C63FF'}}>גלה יעדים</div>
+            <div style={{fontSize:'12px',color:'#94A3B8'}}>המלצות טיול</div>
+          </a>
+          <a href="/he/budget" style={{display:'block',background:'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))',border:'1px solid rgba(16,185,129,0.2)',borderRadius:'16px',padding:'16px',textAlign:'center',textDecoration:'none',color:'inherit'}}>
+            <div style={{fontSize:'24px',marginBottom:'8px'}}>💰</div>
+            <div style={{fontSize:'14px',fontWeight:600,color:'#10B981'}}>נהל תקציב</div>
+            <div style={{fontSize:'12px',color:'#94A3B8'}}>עקוב אחר הוצאות</div>
+          </a>
+        </div>
+      </section>
+
+      {/* Upcoming Events */}
+      <section style={{padding:'0 16px 24px'}}>
+        <div style={{background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'20px',padding:'16px'}}>
+          <h3 style={{fontSize:'18px',fontWeight:600,margin:'0 0 12px 0',display:'flex',alignItems:'center',gap:'8px'}}>
+            <span>📅</span> האירועים הקרובים
           </h3>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="text-4xl mb-3 opacity-50">🗓️</div>
-            <p className="text-text-muted text-sm mb-1">{t('noEvents')}</p>
-            <p className="text-text-muted/60 text-xs">התחילו לתכנן את הטיול הבא!</p>
-            <Link
-              href={`/${locale}/bookings`}
-              className="mt-4 px-4 py-2 bg-primary/10 text-primary text-sm rounded-lg hover:bg-primary/20 transition-colors"
-            >
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 0',textAlign:'center'}}>
+            <div style={{fontSize:'48px',marginBottom:'12px',opacity:0.5}}>🗓️</div>
+            <p style={{color:'#94A3B8',fontSize:'14px',margin:'0 0 4px 0'}}>אין אירועים קרובים</p>
+            <p style={{color:'rgba(148,163,184,0.6)',fontSize:'12px',margin:'0 0 16px 0'}}>התחילו לתכנן את הטיול הבא!</p>
+            <a href="/he/bookings" style={{display:'inline-block',padding:'8px 16px',background:'rgba(108,99,255,0.1)',color:'#6C63FF',fontSize:'14px',borderRadius:'8px',textDecoration:'none'}}>
               הוסף פעילות ראשונה
-            </Link>
+            </a>
           </div>
         </div>
+      </section>
 
-        {/* Family Tip */}
-        <div className="mt-6 bg-gradient-to-br from-secondary/10 to-primary/5 rounded-2xl p-4 border border-secondary/10">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">💡</div>
+      {/* Family Tip */}
+      <section style={{padding:'0 16px 80px'}}>
+        <div style={{background:'linear-gradient(135deg, rgba(255,107,107,0.1), rgba(108,99,255,0.05))',border:'1px solid rgba(255,107,107,0.1)',borderRadius:'20px',padding:'16px'}}>
+          <div style={{display:'flex',alignItems:'flex-start',gap:'12px'}}>
+            <div style={{fontSize:'24px'}}>💡</div>
             <div>
-              <div className="text-sm font-semibold text-secondary mb-1">טיפ לטיול</div>
-              <p className="text-xs text-text-muted leading-relaxed">
+              <div style={{fontSize:'14px',fontWeight:600,color:'#FF6B6B',margin:'0 0 4px 0'}}>טיפ לטיול</div>
+              <p style={{fontSize:'12px',color:'#94A3B8',lineHeight:1.6,margin:0}}>
                 תכננו את היום הראשון כך שיכלול פעילות קלה להתרגל לאקלים והשעה המקומית.
                 הקפידו על שתייה מרובה ומנוחה מספקת.
               </p>
             </div>
           </div>
         </div>
-      </main>
+      </section>
     </div>
   );
 }

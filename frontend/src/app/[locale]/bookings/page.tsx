@@ -1,115 +1,38 @@
 'use client';
-
-import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 
-interface Section {
-  key: 'flights' | 'hotels' | 'attractions';
-  icon: string;
-  titleKey: string;
-  addKey: string;
-  color: string;
-  suggestions: string[];
-}
-
 export default function BookingsPage() {
-  const t = useTranslations();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'he';
-
-  const sections: Section[] = [
-    {
-      key: 'flights',
-      icon: '✈️',
-      titleKey: 'Bookings.flights',
-      addKey: 'Bookings.addFlight',
-      color: 'primary',
-      suggestions: ['תאילנד', 'יפן', 'דרום קוריאה'],
-    },
-    {
-      key: 'hotels',
-      icon: '🏨',
-      titleKey: 'Bookings.hotels',
-      addKey: 'Bookings.addHotel',
-      color: 'success',
-      suggestions: ['מלון 5 כוכבים', 'צימר', 'הוסטל'],
-    },
-    {
-      key: 'attractions',
-      icon: '🎫',
-      titleKey: 'Bookings.attractions',
-      addKey: 'Bookings.addAttraction',
-      color: 'secondary',
-      suggestions: ['מקדשים', 'פארקים', 'מוזיאונים'],
-    },
+  const sections = [
+    { key:'flights', icon:'✈️', title:'טיסות', color:'#6C63FF', count:0 },
+    { key:'hotels', icon:'🏨', title:'המלונות', color:'#10B981', count:0 },
+    { key:'attractions', icon:'🎯', title:'אטרקציות', color:'#FF6B6B', count:0 },
   ];
-
-  function colorClasses(color: string) {
-    const map: Record<string, { bg: string; border: string; text: string; btn: string }> = {
-      primary: { bg: 'from-primary/15 to-primary/5', border: 'border-primary/20', text: 'text-primary', btn: 'bg-primary/10 text-primary hover:bg-primary/20' },
-      success: { bg: 'from-success/15 to-success/5', border: 'border-success/20', text: 'text-success', btn: 'bg-success/10 text-success hover:bg-success/20' },
-      secondary: { bg: 'from-secondary/15 to-secondary/5', border: 'border-secondary/20', text: 'text-secondary', btn: 'bg-secondary/10 text-secondary hover:bg-secondary/20' },
-    };
-    return map[color] || map.primary;
-  }
-
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Header */}
-      <header className="safe-top sticky top-0 z-40 bg-bg-card/90 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold text-text">{t('Bookings.title')}</h1>
-          <button className="p-2 rounded-lg hover:bg-bg-surface transition-colors">
-            <span className="text-lg">➕</span>
-          </button>
-        </div>
+    <div style={{minHeight:'100vh',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl'}}>
+      <header style={{position:'sticky',top:0,zIndex:40,background:'rgba(26,26,46,0.9)',backdropFilter:'blur(16px)',borderBottom:'1px solid rgba(255,255,255,0.08)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <h1 style={{fontSize:'20px',fontWeight:700,color:'#6C63FF',margin:0}}>✈️ TripFamily</h1>
+        <span style={{fontSize:'12px',color:'#94A3B8'}}>הזמנות</span>
       </header>
-
-      {/* Sections */}
-      <main className="p-4 space-y-4">
-        {sections.map((section) => {
-          const colors = colorClasses(section.color);
-          return (
-            <div
-              key={section.key}
-              className={`bg-gradient-to-br ${colors.bg} rounded-2xl border ${colors.border} overflow-hidden`}
-            >
-              {/* Section Header */}
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{section.icon}</span>
-                  <h2 className={`font-semibold ${colors.text}`}>
-                    {t(section.titleKey)}
-                  </h2>
-                </div>
-                <button className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${colors.btn}`}>
-                  {t(section.addKey)}
-                </button>
-              </div>
-
-              {/* Empty State */}
-              <div className="px-4 pb-4">
-                <div className="bg-bg-card/60 rounded-xl p-4 text-center">
-                  <div className="text-3xl mb-2 opacity-50">{section.icon}</div>
-                  <p className="text-text-muted text-xs mb-1">{t('Bookings.noBookings')}</p>
-                  <p className="text-text-muted/60 text-[10px] mb-3">
-                    הוסיפו את ה{section.key === 'flights' ? 'טיסה' : section.key === 'hotels' ? 'מלון' : 'אטרקציה'} הראשונה
-                  </p>
-                  <div className="flex justify-center gap-2 flex-wrap">
-                    {section.suggestions.map((s) => (
-                      <span
-                        key={s}
-                        className="px-2.5 py-1 bg-bg-surface rounded-full text-[10px] text-text-muted/70"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+      <main style={{padding:'16px',paddingBottom:'80px'}}>
+        <h2 style={{fontSize:'24px',fontWeight:700,margin:'0 0 16px 0'}}>📋 ההזמנות שלי</h2>
+        {sections.map(s => (
+          <div key={s.key} style={{background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'16px',marginBottom:'12px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+              <span style={{fontSize:'24px'}}>{s.icon}</span>
+              <div>
+                <h3 style={{fontSize:'16px',fontWeight:600,margin:'0 0 4px 0'}}>{s.title}</h3>
+                <p style={{fontSize:'12px',color:'#94A3B8',margin:0}}>אין פריטים</p>
               </div>
             </div>
-          );
-        })}
+            <span style={{color:s.color,fontSize:'20px',fontWeight:700}}>0</span>
+          </div>
+        ))}
+        <div style={{textAlign:'center',padding:'32px 0',marginTop:'16px'}}>
+          <p style={{color:'#94A3B8',fontSize:'14px',margin:'0 0 16px 0'}}>אין הזמנות עדיין</p>
+          <a href="/he/explore" style={{display:'inline-block',padding:'10px 20px',background:'rgba(108,99,255,0.15)',color:'#6C63FF',borderRadius:'8px',textDecoration:'none',fontWeight:500}}>גלה יעדים והוסף הזמנות</a>
+        </div>
       </main>
     </div>
   );
