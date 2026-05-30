@@ -1,5 +1,3 @@
-import { NextIntlClientProvider } from 'next-intl';
-import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 import './globals.css';
 
@@ -26,24 +24,13 @@ export const viewport = {
   themeColor: '#0F0F23',
 };
 
-import { AuthProvider } from '../lib/auth';
-
 export default async function RootLayout({
   children,
-  params: { locale },
 }: {
-  children: React.ReactNode;
-  params: { locale: string };
+  children: ReactNode;
 }) {
-  let messages;
-  try {
-    messages = (await import(`../../messages/${locale}.json`)).default;
-  } catch (error) {
-    notFound();
-  }
-
   return (
-    <html lang={locale} dir="rtl">
+    <html lang="he" dir="rtl">
       <head>
         <meta name="theme-color" content="#0F0F23" />
         <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
@@ -51,13 +38,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body>
-        <AuthProvider>
-          <NextIntlClientProvider locale={locale} messages={messages}>
-            {children}
-          </NextIntlClientProvider>
-        </AuthProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
