@@ -1,24 +1,39 @@
 'use client';
 
+import { NextIntlClientProvider } from 'next-intl';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ReactNode } from 'react';
 
 const tabs = [
-  { href: '', icon: '🏠', labelKey: 'Home' },
-  { href: '/explore', icon: '🌏', labelKey: 'Explore' },
-  { href: '/bookings', icon: '📋', labelKey: 'Bookings' },
-  { href: '/budget', icon: '💰', labelKey: 'Budget' },
-  { href: '/profile', icon: '👤', labelKey: 'Profile' },
+  { href: '', icon: '🏠', labelKey: 'Home.title' },
+  { href: '/explore', icon: '🌏', labelKey: 'Explore.title' },
+  { href: '/bookings', icon: '📋', labelKey: 'Bookings.title' },
+  { href: '/budget', icon: '💰', labelKey: 'Budget.title' },
+  { href: '/profile', icon: '👤', labelKey: 'Profile.title' },
 ] as const;
 
-export default function LocaleLayoutInner({
+export default function LocaleLayoutClient({
   children,
   locale,
+  messages,
 }: {
   children: ReactNode;
   locale: string;
+  messages: Record<string, unknown>;
 }) {
+  return (
+    <NextIntlClientProvider locale={locale} messages={messages as any}>
+      <LocaleLayoutInner locale={locale}>
+        {children}
+      </LocaleLayoutInner>
+    </NextIntlClientProvider>
+  );
+}
+
+function LocaleLayoutInner({ children, locale }: { children: ReactNode; locale: string }) {
   const pathname = usePathname();
+  const t = useTranslations();
 
   const currentPath = pathname.replace(`/${locale}`, '') || '/';
 
@@ -50,7 +65,7 @@ export default function LocaleLayoutInner({
                   {tab.icon}
                 </span>
                 <span className={`text-[10px] font-medium ${isActive ? 'text-primary' : ''}`}>
-                  {tab.labelKey}
+                  {t(tab.labelKey)}
                 </span>
               </a>
             );
