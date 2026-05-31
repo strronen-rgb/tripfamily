@@ -196,12 +196,12 @@ export default function TripDetailPage() {
 
   if (!session) return null;
 
-  const startDate = trip.startDate || trip.start_date;
-  const endDate = trip.endDate || trip.end_date;
+  const startDate = trip?.startDate || trip?.start_date;
+  const endDate = trip?.endDate || trip?.end_date;
   const statusColors: Record<string, string> = { planning: '#6C63FF', live: '#10B981', completed: '#F59E0B' };
   const statusLabels: Record<string, string> = { planning: 'תכנון', live: 'פעיל', completed: 'הושלם' };
   const statusIcons: Record<string, string> = { planning: '📋', live: '🟢', completed: '✅' };
-  const currentStatus = trip.status || 'planning';
+  const currentStatus = trip?.status || 'planning';
 
   const formatDate = (d?: string) => {
     if (!d) return '—';
