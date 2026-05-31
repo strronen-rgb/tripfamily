@@ -25,19 +25,19 @@
 - [x] Login page UI with proper auth flow (inline styles, tabs, Google SSO button)
 - [x] Protected routes middleware (session check in layout-client, redirect to auth)
 - [x] Logout functionality (signOut in profile page)
-- [ ] Auth error handling (login failures, session expiry messages)
+- [x] Auth error handling (login failures, session expiry messages)
 - [ ] Password reset flow
 - [ ] Email verification
 
-## Phase 2: Trip Management Core [ ]
-- [ ] Create new trip form
-- [ ] Edit trip details
-- [ ] Delete trip
-- [ ] Trip list view
-- [ ] Trip detail page
-- [ ] Trip members management
-- [ ] Trip dates/duration picker
-- [ ] Save/load trips from database
+## Phase 2: Trip Management Core [~]
+- [x] Create new trip form (frontend + backend POST /api/families)
+- [x] Edit trip details (frontend + backend PUT /api/families/:id)
+- [x] Delete trip (frontend + backend DELETE /api/families/:id)
+- [x] Trip list view (frontend /he/trips)
+- [x] Trip detail page (frontend /he/trips/[id])
+- [x] Trip members management (backend DELETE /api/families/members/:memberId)
+- [x] Trip dates/duration picker (frontend form + backend)
+- [x] Save/load trips from database (all CRUD operations)
 - [ ] Trip cover image upload
 - [ ] Trip status (planning/live/completed)
 - [ ] Search/filter trips
@@ -130,6 +130,7 @@
 
 ## Notes
 - Tailwind CSS not working on Vercel — replaced with inline styles
-- Backend routes exist but not connected to frontend
-- Auth uses localStorage (not ideal for production, plan to migrate to httpOnly cookies)
-- NextAuth configured in /api/auth/[...nextauth]/route.ts but frontend doesn't call it yet
+- Backend routes exist and connected to frontend via API calls
+- Auth uses NextAuth (Google OAuth + credentials) with session management
+- Trip Management CRUD fully implemented (create, read, update, delete)
+- Next: Deploy backend to Render and test end-to-end
