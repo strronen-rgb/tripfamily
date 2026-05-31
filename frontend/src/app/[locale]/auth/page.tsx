@@ -46,7 +46,12 @@ export default function AuthPage() {
           body: JSON.stringify({ email, password, name }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'ההרשמה נכשלה');
+        if (!res.ok) {
+          // Handle specific backend errors
+          if (res.status === 409) throw new Error('האימייל כבר רשום במערכת. נסה להתחבר.');
+          if (res.status === 400) throw new Error(data.error || 'נתונים לא תקינים. בדוק שוב.');
+          throw new Error(data.error || 'ההרשמה נכשלה. נסה שוב.');
+        }
       }
       // Sign in with NextAuth
       const result = await signIn('credentials', {
@@ -55,7 +60,14 @@ export default function AuthPage() {
         redirect: false,
       });
       if (result?.error) {
+        // Handle specific NextAuth errors
+        if (result.error === 'CredentialsSignin') {
+          throw new Error('אימייל או סיסמה שגויים. נסה שוב.');
+        }
         throw new Error('ההתחברות נכשלה. בדוק את הפרטים ונסה שוב.');
+      }
+      if (!result?.ok) {
+        throw new Error('ההתחברות נכשלה. נסה שוב מאוחר יותר.');
       }
       router.replace(`/${locale}`);
     } catch (err: any) {
@@ -67,10 +79,11 @@ export default function AuthPage() {
 
   async function handleGoogleLogin() {
     setLoading(true);
+    setServerError('');
     try {
       await signIn('google', { callbackUrl: `/${locale}` });
     } catch (err: any) {
-      setServerError('שגיאה בהתחברות עם Google');
+      setServerError('שגיאה בהתחברות עם Google. נסה שוב.');
       setLoading(false);
     }
   }

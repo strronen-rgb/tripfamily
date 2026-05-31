@@ -20,12 +20,12 @@
 - [x] next-intl v3 App Router setup
 - [x] Inline styles replacing broken Tailwind CSS
 - [x] Backend API routes (auth, flights, hotels, attractions, budget, timeline)
-- [ ] Google OAuth login (NextAuth setup exists, frontend not connected)
-- [ ] User registration (backend route exists, frontend not connected)
-- [ ] Login page UI with proper auth flow
-- [ ] Protected routes middleware
-- [ ] Logout functionality
-- [ ] Auth error handling (login failures, session expiry)
+- [x] Google OAuth login (NextAuth GoogleProvider -> backend /api/auth/google)
+- [x] User registration (register API -> signIn with NextAuth)
+- [x] Login page UI with proper auth flow (inline styles, tabs, Google SSO button)
+- [x] Protected routes middleware (session check in layout-client, redirect to auth)
+- [x] Logout functionality (signOut in profile page)
+- [ ] Auth error handling (login failures, session expiry messages)
 - [ ] Password reset flow
 - [ ] Email verification
 
