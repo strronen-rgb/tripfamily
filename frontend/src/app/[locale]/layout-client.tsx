@@ -37,9 +37,19 @@ export default function LocaleLayoutInner({
     return (
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
         <div style={{textAlign:'center'}}>
-          <div style={{fontSize:'48px',marginBottom:'16px',animation:'pulse 1.5s ease-in-out infinite'}}>✈️</div>
-          <p>טוען...</p>
+          <div style={{position:'relative',width:'120px',height:'120px',margin:'0 auto 16px'}}>
+            <p style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',margin:0,fontSize:'16px',fontWeight:600,color:'#6C63FF',whiteSpace:'nowrap'}}>טעינה</p>
+            <div style={{position:'absolute',top:'50%',left:'50%',width:'120px',height:'120px',marginTop:'-60px',marginLeft:'-60px',animation:'orbit 1.5s linear infinite'}}>
+              <span style={{position:'absolute',top:'-12px',left:'50%',transform:'translateX(-50%)',fontSize:'28px'}}>✈️</span>
+            </div>
+          </div>
         </div>
+        <style>{`
+          @keyframes orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
