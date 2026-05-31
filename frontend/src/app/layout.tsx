@@ -1,13 +1,19 @@
-'use client';
-
-import { ReactNode, useEffect, useState } from 'react';
-import { SessionProvider } from 'next-auth/react';
+import { ReactNode } from 'react';
+import AuthProvider from './providers';
 import './globals.css';
 
 export const metadata = {
   title: 'TripFamily — מתכנן טיולים משפחתי',
   description: 'מתכנן טיולים משפחתי — טאילנד, יפן, דרום קוריאה',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'TripFamily',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport = {
@@ -15,6 +21,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#0F0F23',
 };
 
@@ -24,11 +31,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <meta name="theme-color" content="#0F0F23" />
         <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body>
-        <SessionProvider>
-          {children}
-        </SessionProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

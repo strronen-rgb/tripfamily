@@ -10,9 +10,6 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.tiktok.com' },
     ],
   },
-  experimental: {
-    serverActions: true,
-  },
 };
 
 module.exports = nextConfig;
