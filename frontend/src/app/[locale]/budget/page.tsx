@@ -21,7 +21,7 @@ export default function BudgetPage() {
       <main style={{padding:'16px',paddingBottom:'80px'}}>
         {/* Total Budget Card */}
         <div style={{background:'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(16,185,129,0.1))',border:'1px solid rgba(108,99,255,0.2)',borderRadius:'20px',padding:'24px',marginBottom:'24px',textAlign:'center'}}>
-          <p style={{fontSize:'14px',color:'#94A3B8',margin:'0 0 8px 0'}}>סה"כ תקציב</p>
+          <p style={{fontSize:'14px',color:'#94A3B8',margin:'0 0 8px 0'}}>סה&quot;כ תקציב</p>
           <p style={{fontSize:'36px',fontWeight:700,color:'#6C63FF',margin:'0 0 4px 0',fontFamily:'JetBrains Mono,monospace'}}>₪{total.toLocaleString()}</p>
           <p style={{fontSize:'12px',color:'#94A3B8',margin:0}}>מתוך ₪0 שהוקצו</p>
         </div>
