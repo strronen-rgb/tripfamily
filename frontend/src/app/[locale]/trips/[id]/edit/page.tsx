@@ -20,6 +20,8 @@ export default function EditTripPage() {
   const [destinations, setDestinations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [coverImage, setCoverImage] = useState('');
+  const [tripStatus, setTripStatus] = useState('planning');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -44,10 +46,13 @@ export default function EditTripPage() {
         });
         if (!res.ok) throw new Error('שגיאה בטעינת הטיול');
         const data = await res.json();
-        setName(data.name || '');
-        setDestinations(data.destinations || []);
-        setStartDate(data.start_date ? data.start_date.split('T')[0] : '');
-        setEndDate(data.end_date ? data.end_date.split('T')[0] : '');
+        const family = data?.data?.family || data;
+        setName(family.name || '');
+        setDestinations(family.destinations || []);
+        setStartDate(family.startDate ? String(family.startDate).split('T')[0] : family.start_date ? String(family.start_date).split('T')[0] : '');
+        setEndDate(family.endDate ? String(family.endDate).split('T')[0] : family.end_date ? String(family.end_date).split('T')[0] : '');
+        setCoverImage(family.coverImage || '');
+        setTripStatus(family.status || 'planning');
       } catch (err: any) {
         setError(err.message || 'שגיאה בטעינת פרטי הטיול');
       } finally {
@@ -97,6 +102,8 @@ export default function EditTripPage() {
           destinations,
           start_date: startDate,
           end_date: endDate,
+          coverImage: coverImage.trim() || undefined,
+          status: tripStatus,
         }),
       });
 
@@ -221,6 +228,55 @@ export default function EditTripPage() {
                   required
                   style={{width:'100%',padding:'14px 16px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',color:'#E8E8F0',fontSize:'15px',outline:'none',boxSizing:'border-box',fontFamily:'inherit',colorScheme:'dark'}}
                 />
+              </div>
+            </div>
+
+            {/* Cover Image URL */}
+            <div style={{marginBottom:'24px'}}>
+              <label style={{display:'block',fontSize:'14px',fontWeight:600,color:'#E8E8F0',marginBottom:'8px'}}>
+                🖼️ תמונת שער (URL)
+              </label>
+              <input
+                type="url"
+                value={coverImage}
+                onChange={(e) => setCoverImage(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                style={{width:'100%',padding:'14px 16px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',color:'#E8E8F0',fontSize:'15px',outline:'none',boxSizing:'border-box',fontFamily:'inherit'}}
+              />
+              {coverImage && (
+                <div style={{marginTop:'12px',borderRadius:'12px',overflow:'hidden',height:'120px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)'}}>
+                  <img src={coverImage} alt="preview" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={(e) => {(e.target as HTMLImageElement).style.display = 'none';}} />
+                </div>
+              )}
+            </div>
+
+            {/* Trip Status */}
+            <div style={{marginBottom:'24px'}}>
+              <label style={{display:'block',fontSize:'14px',fontWeight:600,color:'#E8E8F0',marginBottom:'12px'}}>
+                🏷️ סטטוס הטיול
+              </label>
+              <div style={{display:'flex',gap:'10px'}}>
+                {[
+                  { value: 'planning', label: 'תכנון', color: '#6C63FF', icon: '📋' },
+                  { value: 'live', label: 'פעיל', color: '#10B981', icon: '🟢' },
+                  { value: 'completed', label: 'הושלם', color: '#F59E0B', icon: '✅' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTripStatus(opt.value)}
+                    style={{
+                      flex:1,padding:'12px',borderRadius:'12px',
+                      border: tripStatus === opt.value ? `2px solid ${opt.color}` : '2px solid rgba(255,255,255,0.08)',
+                      background: tripStatus === opt.value ? `${opt.color}15` : 'transparent',
+                      color: tripStatus === opt.value ? opt.color : '#94A3B8',
+                      fontSize:'14px',fontWeight: tripStatus === opt.value ? 600 : 400,
+                      cursor:'pointer',transition:'all 0.2s',textAlign:'center',fontFamily:'inherit',
+                    }}
+                  >
+                    {opt.icon} {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
 

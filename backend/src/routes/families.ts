@@ -9,11 +9,12 @@ const router = Router();
 // ── POST /api/families — create family ────────────────────────────
 router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, destinations, startDate, endDate } = req.body as {
+    const { name, destinations, startDate, endDate, coverImage } = req.body as {
       name: string;
       destinations?: string[];
       startDate?: string;
       endDate?: string;
+      coverImage?: string;
     };
     const userId = req.user!.userId;
 
@@ -35,6 +36,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
         destinations: destinations || [],
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
+        coverImage: coverImage || undefined,
         inviteCode: finalCode,
         managerId: userId,
         users: {
@@ -58,6 +60,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response, next: NextF
           destinations: family.destinations,
           startDate: family.startDate,
           endDate: family.endDate,
+          status: family.status,
+          coverImage: family.coverImage,
         },
       },
     });
@@ -148,15 +152,16 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
           destinations: family.destinations,
           startDate: family.startDate,
           endDate: family.endDate,
+          status: family.status,
+          coverImage: family.coverImage,
           users: family.users,
           createdAt: family.createdAt,
         },
       },
-    },
-  });
-} catch (error) {
-  next(error);
-}
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // ── PUT /api/families/:id — update family (manager only) ───────────
@@ -164,11 +169,13 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
   try {
     const { id } = req.params;
     const userId = req.user!.userId;
-    const { name, destinations, startDate, endDate } = req.body as {
+    const { name, destinations, startDate, endDate, status, coverImage } = req.body as {
       name?: string;
       destinations?: string[];
       startDate?: string;
       endDate?: string;
+      status?: string;
+      coverImage?: string;
     };
 
     const family = await prisma.family.findUnique({ where: { id } });
@@ -188,6 +195,8 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
         ...(destinations !== undefined && { destinations }),
         ...(startDate !== undefined && { startDate: new Date(startDate) }),
         ...(endDate !== undefined && { endDate: new Date(endDate) }),
+        ...(status !== undefined && { status }),
+        ...(coverImage !== undefined && { coverImage }),
       },
       include: {
         users: {
@@ -212,8 +221,80 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response, next: Nex
           destinations: updatedFamily.destinations,
           startDate: updatedFamily.startDate,
           endDate: updatedFamily.endDate,
+          status: updatedFamily.status,
+          coverImage: updatedFamily.coverImage,
           users: updatedFamily.users,
           createdAt: updatedFamily.createdAt,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ── POST /api/families/:id/duplicate — duplicate a family ─────────
+router.post('/:id/duplicate', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    const original = await prisma.family.findUnique({
+      where: { id },
+      include: { users: true },
+    });
+
+    if (!original) {
+      throw new NotFoundError('Family not found');
+    }
+
+    // Check user is a member
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.familyId !== id) {
+      throw new ForbiddenError('You must be a member to duplicate this family');
+    }
+
+    // Generate new invite code
+    let finalCode = '';
+    for (let attempt = 0; attempt < 10; attempt++) {
+      finalCode = auth.generateInviteCode();
+      const existing = await prisma.family.findUnique({ where: { inviteCode: finalCode } });
+      if (!existing) break;
+    }
+
+    const newFamily = await prisma.family.create({
+      data: {
+        name: `${original.name} (העתק)`,
+        destinations: original.destinations,
+        startDate: original.startDate,
+        endDate: original.endDate,
+        status: 'planning',
+        coverImage: original.coverImage,
+        inviteCode: finalCode,
+        managerId: userId,
+        users: {
+          connect: { id: userId },
+        },
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { familyId: newFamily.id, role: 'MANAGER' },
+    });
+
+    res.status(201).json({
+      data: {
+        family: {
+          id: newFamily.id,
+          name: newFamily.name,
+          inviteCode: newFamily.inviteCode,
+          managerId: newFamily.managerId,
+          destinations: newFamily.destinations,
+          startDate: newFamily.startDate,
+          endDate: newFamily.endDate,
+          status: newFamily.status,
+          coverImage: newFamily.coverImage,
         },
       },
     });
@@ -292,6 +373,8 @@ router.get('/my', authMiddleware, async (req: Request, res: Response, next: Next
           destinations: family.destinations,
           startDate: family.startDate,
           endDate: family.endDate,
+          status: family.status,
+          coverImage: family.coverImage,
           users: family.users,
           createdAt: family.createdAt,
         },

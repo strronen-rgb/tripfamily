@@ -209,6 +209,18 @@ export default function AuthPage() {
           התחברות עם Google
         </button>
 
+        {/* Forgot Password */}
+        {activeTab === 'login' && (
+          <p style={{textAlign:'center',marginTop:'16px',fontSize:'13px'}}>
+            <a
+              href={`/${locale}/auth/reset-password`}
+              style={{color:'#6C63FF',fontWeight:500,textDecoration:'none'}}
+            >
+              שכחת סיסמא?
+            </a>
+          </p>
+        )}
+
         {/* Switch Tab */}
         <p style={{textAlign:'center',marginTop:'24px',fontSize:'14px',color:'#94A3B8'}}>
           {activeTab === 'login' ? (

@@ -71,6 +71,8 @@ model Family {
   endDate      DateTime?
   inviteCode   String       @unique
   managerId    String
+  status       String       @default("planning")
+  coverImage   String?
   users        User[]
   flights      Flight[]
   hotels       Hotel[]

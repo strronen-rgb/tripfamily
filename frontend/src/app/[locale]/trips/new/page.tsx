@@ -19,6 +19,7 @@ export default function NewTripPage() {
   const [destinations, setDestinations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [coverImage, setCoverImage] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -69,6 +70,7 @@ export default function NewTripPage() {
           destinations,
           start_date: startDate,
           end_date: endDate,
+          coverImage: coverImage.trim() || undefined,
         }),
       });
 
@@ -192,6 +194,25 @@ export default function NewTripPage() {
             </div>
           </div>
 
+          {/* Cover Image URL */}
+          <div style={{marginBottom:'24px'}}>
+            <label style={{display:'block',fontSize:'14px',fontWeight:600,color:'#E8E8F0',marginBottom:'8px'}}>
+              🖼️ תמונת שער (URL) — אופציונלי
+            </label>
+            <input
+              type="url"
+              value={coverImage}
+              onChange={(e) => setCoverImage(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              style={{width:'100%',padding:'14px 16px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',color:'#E8E8F0',fontSize:'15px',outline:'none',boxSizing:'border-box',fontFamily:'inherit'}}
+            />
+            {coverImage && (
+              <div style={{marginTop:'12px',borderRadius:'12px',overflow:'hidden',height:'120px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)'}}>
+                <img src={coverImage} alt="preview" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={(e) => {(e.target as HTMLImageElement).style.display = 'none';}} />
+              </div>
+            )}
+          </div>
+
           {/* Error Message */}
           {error && (
             <div style={{background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px',padding:'14px 16px',marginBottom:'20px',color:'#EF4444',fontSize:'14px',textAlign:'center'}}>
@@ -221,7 +242,7 @@ export default function NewTripPage() {
             }}
           >
             {submitting ? (
-              <>ⳳותשה..</>
+              <>יוצר טיול...</>
             ) : (
               <>
                 <span style={{fontSize:'18px'}}>✈️</span>

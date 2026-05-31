@@ -10,6 +10,8 @@ interface TripDetail {
   id: string | number;
   name: string;
   destinations?: string[];
+  startDate?: string;
+  endDate?: string;
   start_date?: string;
   end_date?: string;
   members?: any[];
@@ -17,6 +19,8 @@ interface TripDetail {
   flights?: any[];
   hotels?: any[];
   attractions?: any[];
+  status?: string;
+  coverImage?: string;
 }
 
 function SectionCard({ title, icon, items, onAdd, locale, tripId }: {
@@ -84,6 +88,8 @@ export default function TripDetailPage() {
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -136,6 +142,49 @@ export default function TripDetailPage() {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!trip) return;
+    setDuplicating(true);
+    try {
+      const res = await fetch(`${API_URL}/api/families/${trip.id}/duplicate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error('שגיאה בשכפול הטיול');
+      const data = await res.json();
+      const newId = data?.data?.family?.id;
+      if (newId) router.push(`/${locale}/trips/${newId}`);
+    } catch (err: any) {
+      setError(err.message || 'שגיאה בשכפול הטיול');
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!trip) return;
+    setStatusUpdating(true);
+    try {
+      const res = await fetch(`${API_URL}/api/families/${trip.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('שגיאה בעדכון סטטוס');
+      setTrip(prev => prev ? { ...prev, status: newStatus } : prev);
+    } catch (err: any) {
+      setError(err.message || 'שגיאה בעדכון סטטוס');
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   if (status === 'loading') return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
       <div style={{textAlign:'center'}}>
@@ -146,6 +195,13 @@ export default function TripDetailPage() {
   );
 
   if (!session) return null;
+
+  const startDate = trip.startDate || trip.start_date;
+  const endDate = trip.endDate || trip.end_date;
+  const statusColors: Record<string, string> = { planning: '#6C63FF', live: '#10B981', completed: '#F59E0B' };
+  const statusLabels: Record<string, string> = { planning: 'תכנון', live: 'פעיל', completed: 'הושלם' };
+  const statusIcons: Record<string, string> = { planning: '📋', live: '🟢', completed: '✅' };
+  const currentStatus = trip.status || 'planning';
 
   const formatDate = (d?: string) => {
     if (!d) return '—';
@@ -219,6 +275,58 @@ export default function TripDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Status Selector */}
+            <div style={{background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'16px',marginBottom:'20px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+                <h3 style={{fontSize:'15px',fontWeight:600,color:'#E8E8F0',margin:0,display:'flex',alignItems:'center',gap:'6px'}}>
+                  🏷️ סטטוס הטיול
+                </h3>
+                <span style={{
+                  display:'inline-flex',alignItems:'center',gap:'4px',
+                  background:`${statusColors[currentStatus]}18`,color:statusColors[currentStatus],
+                  padding:'3px 10px',borderRadius:'12px',fontSize:'12px',fontWeight:600,
+                  border:`1px solid ${statusColors[currentStatus]}30`,
+                }}>
+                  {statusIcons[currentStatus]} {statusLabels[currentStatus]}
+                </span>
+              </div>
+              <div style={{display:'flex',gap:'8px'}}>
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => handleStatusChange(value)}
+                    disabled={statusUpdating || currentStatus === value}
+                    style={{
+                      flex:1,padding:'10px',borderRadius:'12px',border:'2px solid',
+                      borderColor: currentStatus === value ? statusColors[value] : 'rgba(255,255,255,0.06)',
+                      background: currentStatus === value ? `${statusColors[value]}15` : 'transparent',
+                      color: currentStatus === value ? statusColors[value] : '#94A3B8',
+                      fontSize:'14px',fontWeight:600,cursor: (statusUpdating || currentStatus === value) ? 'not-allowed' : 'pointer',
+                      transition:'all 0.2s',textAlign:'center',
+                    }}
+                  >
+                    {statusIcons[value]} {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Duplicate Button */}
+            <button
+              onClick={handleDuplicate}
+              disabled={duplicating}
+              style={{
+                width:'100%',padding:'14px',marginBottom:'20px',
+                background:'rgba(16,185,129,0.1)',color:'#10B981',
+                border:'1px solid rgba(16,185,129,0.25)',borderRadius:'14px',
+                fontSize:'14px',fontWeight:600,cursor: duplicating ? 'not-allowed' : 'pointer',
+                fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+                opacity: duplicating ? 0.6 : 1,
+              }}
+            >
+              📋 {duplicating ? 'משכפל...' : 'שכפל טיול'}
+            </button>
 
             {/* Members */}
             {(trip.members && trip.members.length > 0) || (trip.family_members && trip.family_members.length > 0) && (
