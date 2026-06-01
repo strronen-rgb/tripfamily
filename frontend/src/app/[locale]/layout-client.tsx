@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 const tabs = [
   { href: '', icon: '🏠', label: 'בית' },
@@ -22,7 +22,11 @@ export default function LocaleLayoutInner({
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const currentPath = pathname.replace(`/${locale}`, '') || '/';
-  const isAuthPage = currentPath === '/auth';
+  const isAuthPage = currentPath === '/auth' || currentPath.startsWith('/auth/');
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tripfamily-api.onrender.com';
 
   // Redirect to auth if not authenticated (except on auth page)
   useEffect(() => {
@@ -70,8 +74,67 @@ export default function LocaleLayoutInner({
     );
   }
 
+  // Check if user needs email verification
+  const userEmail = session?.user?.email;
+  const needsVerification = userEmail && !isAuthPage;
+
+  // Resend verification email
+  async function handleResendVerification() {
+    if (!userEmail) return;
+    setResending(true);
+    setResendMsg('');
+    try {
+      const res = await fetch(`${API_URL}/api/auth/verify/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResendMsg('קישור אימות נשלח מחדש! בדוק את האימייל שלך.');
+      } else {
+        setResendMsg(data.error || 'שגיאה בשליחה. נסה שוב.');
+      }
+    } catch {
+      setResendMsg('שגיאת רשת. נסה שוב.');
+    } finally {
+      setResending(false);
+    }
+  }
+
   return (
     <div style={{minHeight:'100vh',background:'#0F0F23'}}>
+      {/* Email verification banner */}
+      {needsVerification && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,107,107,0.1))',
+          borderBottom: '1px solid rgba(108,99,255,0.2)',
+          padding: '12px 16px',
+          textAlign: 'center',
+          direction: 'rtl',
+        }}>
+          <p style={{margin:'0 0 8px 0',color:'#E8E8F0',fontSize:'13px'}}>
+            📧 יש לאמת את האימייל שלך כדי להשתמש בכל הפיצ'רים
+          </p>
+          <button
+            onClick={handleResendVerification}
+            disabled={resending}
+            style={{
+              padding:'6px 16px',background:'#6C63FF',color:'#fff',
+              border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:600,cursor:'pointer',
+              opacity: resending ? 0.5 : 1,
+            }}
+          >
+            {resending ? 'שולח...' : 'שלח קישור אימות'}
+          </button>
+          {resendMsg && (
+            <p style={{margin:'8px 0 0 0',fontSize:'12px',color:resendMsg.includes('נשלח')?'#34D399':'#EF4444'}}>
+              {resendMsg}
+            </p>
+          )}
+        </div>
+      )}
+
       <main style={{paddingBottom:'80px'}}>{children}</main>
 
       {/* Bottom Tab Bar - hide on auth page */}

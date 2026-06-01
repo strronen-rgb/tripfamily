@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useCallback } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { useState, FormEvent, useEffect, useCallback, useRef } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 
 type Tab = 'login' | 'register';
@@ -53,6 +53,54 @@ export default function AuthPage() {
     }
   }, [session, locale, router]);
 
+  // Store latest values in refs so Google callback always has fresh data
+  const API_URL_REF = useRef(API_URL);
+  const localeRef = useRef(locale);
+  const routerRef = useRef(router);
+  API_URL_REF.current = API_URL;
+  localeRef.current = locale;
+  routerRef.current = router;
+
+  // Handle Google credential response — stable callback for GIS
+  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
+    setLoading(true);
+    setServerError('');
+
+    try {
+      const res = await fetch(`${API_URL_REF.current}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'ההתחברות עם Google נכשלה');
+      }
+
+      // Store JWT in cookie for API requests
+      document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+      // Create NextAuth session (custom google-oauth provider)
+      const result = await signIn('google-oauth', {
+        token: data.data.token,
+        userId: data.data.user.id,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        // NextAuth session failed but JWT is saved — still proceed
+        console.warn('NextAuth session error:', result.error);
+      }
+
+      routerRef.current.replace(`/${localeRef.current}`);
+    } catch (err: any) {
+      setServerError(err.message || 'שגיאה בהתחברות עם Google. נסה שוב.');
+    } finally {
+      setLoading(false);
+    }
+  }, []); // stable — uses refs
+
   // Load Google Identity Services script
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
@@ -77,49 +125,7 @@ export default function AuthPage() {
         });
       }
     };
-  }, [GOOGLE_CLIENT_ID]);
-
-  // Handle Google credential response
-  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
-    setLoading(true);
-    setServerError('');
-
-    try {
-      // Send Google credential to our backend
-      const res = await fetch(`${API_URL}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'ההתחברות עם Google נכשלה');
-      }
-
-      // Store JWT token in cookie for API requests
-      document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-
-      // Also sign in with NextAuth (session strategy)
-      const result = await signIn('google-oauth', {
-        token: data.data.token,
-        userId: data.data.user.id,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        // NextAuth session failed but we have JWT — still proceed
-        console.warn('NextAuth session error:', result.error);
-      }
-
-      router.replace(`/${locale}`);
-    } catch (err: any) {
-      setServerError(err.message || 'שגיאה בהתחברות עם Google. נסה שוב.');
-    } finally {
-      setLoading(false);
-    }
-  }, [API_URL, locale, router]);
+  }, [GOOGLE_CLIENT_ID, handleGoogleCredential]);
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -141,7 +147,7 @@ export default function AuthPage() {
 
     try {
       if (activeTab === 'register') {
-        // Register via backend API first
+        // Step 1: Register via backend API
         const res = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -153,16 +159,24 @@ export default function AuthPage() {
           if (res.status === 400) throw new Error(data.error || 'נתונים לא תקינים. בדוק שוב.');
           throw new Error(data.error || 'ההרשמה נכשלה. נסה שוב.');
         }
-        // Save JWT from registration
-        if (data.data?.token) {
-          document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+        // Step 2: Auto-login with NextAuth credentials
+        const loginResult = await signIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        });
+
+        if (loginResult?.error) {
+          throw new Error('ההרשמה הצליחה אך ההתחברות נכשלה. נסה להתחבר ידנית.');
         }
-        // Redirect to email verification page
-        router.replace(`/${locale}/auth/verify-email`);
+
+        // Step 3: Redirect to home — verification banner will show if email not verified
+        router.replace(`/${locale}`);
         return;
       }
 
-      // Sign in with NextAuth credentials (login)
+      // Login flow
       const result = await signIn('credentials', {
         email,
         password,
@@ -214,7 +228,7 @@ export default function AuthPage() {
       {/* Tab Switcher */}
       <div style={{padding:'0 16px',marginBottom:'24px'}}>
         <div style={{display:'flex',background:'#1A1A2E',borderRadius:'12px',padding:'4px',border:'1px solid rgba(255,255,255,0.08)'}}>
-          <button onClick={() => { setActiveTab('login'); setErrors({}); }} style={{
+          <button onClick={() => { setActiveTab('login'); setErrors({}); setServerError(''); }} style={{
             flex:1, padding:'10px', border:'none', borderRadius:'8px', fontSize:'14px', fontWeight:600, cursor:'pointer',
             background: activeTab === 'login' ? '#6C63FF' : 'transparent',
             color: activeTab === 'login' ? '#fff' : '#94A3B8',
@@ -223,7 +237,7 @@ export default function AuthPage() {
           }}>
             התחברות
           </button>
-          <button onClick={() => { setActiveTab('register'); setErrors({}); }} style={{
+          <button onClick={() => { setActiveTab('register'); setErrors({}); setServerError(''); }} style={{
             flex:1, padding:'10px', border:'none', borderRadius:'8px', fontSize:'14px', fontWeight:600, cursor:'pointer',
             background: activeTab === 'register' ? '#6C63FF' : 'transparent',
             color: activeTab === 'register' ? '#fff' : '#94A3B8',
@@ -237,6 +251,13 @@ export default function AuthPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} style={{flex:1,padding:'0 16px'}}>
+        {/* Server Error */}
+        {serverError && (
+          <div style={{marginBottom:'16px',padding:'12px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px'}}>
+            <p style={{color:'#EF4444',fontSize:'12px',textAlign:'center',margin:0}}>{serverError}</p>
+          </div>
+        )}
+
         {/* Name (register only) */}
         {activeTab === 'register' && (
           <div style={{marginBottom:'16px'}}>
@@ -269,13 +290,6 @@ export default function AuthPage() {
           </div>
         )}
 
-        {/* Server Error */}
-        {serverError && (
-          <div style={{marginBottom:'16px',padding:'12px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px'}}>
-            <p style={{color:'#EF4444',fontSize:'12px',textAlign:'center',margin:0}}>{serverError}</p>
-          </div>
-        )}
-
         {/* Submit */}
         <button type="submit" disabled={loading} style={{
           width:'100%',marginTop:'32px',padding:'14px',background:'#6C63FF',color:'#fff',
@@ -286,33 +300,27 @@ export default function AuthPage() {
           {loading ? 'טוען...' : activeTab === 'login' ? 'התחברות' : 'הרשמה'}
         </button>
 
-        {/* Divider */}
+        {/* Divider + Google SSO */}
         <div style={{display:'flex',alignItems:'center',gap:'12px',margin:'24px 0'}}>
           <div style={{flex:1,height:'1px',background:'rgba(255,255,255,0.08)'}} />
           <span style={{fontSize:'12px',color:'#94A3B8'}}>או</span>
           <div style={{flex:1,height:'1px',background:'rgba(255,255,255,0.08)'}} />
         </div>
 
-        {/* Google SSO — rendered by Google Identity Services */}
+        {/* Google SSO */}
         {GOOGLE_CLIENT_ID ? (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <div id="google-signin-button" />
           </div>
         ) : (
-          /* Fallback: custom Google button when no client ID configured */
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => {
-              setServerError('Google OAuth לא מוגדר עדיין. הגדר NEXT_PUBLIC_GOOGLE_CLIENT_ID ב-.env');
-            }}
-            style={{
-              width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
-              color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
-              display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
-              opacity: loading ? 0.5 : 1,
-            }}
-          >
+          <button type="button" disabled={loading} onClick={() => {
+            setServerError('Google OAuth לא מוגדר עדיין. הגדר NEXT_PUBLIC_GOOGLE_CLIENT_ID ב-.env');
+          }} style={{
+            width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
+            color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
+            display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+            opacity: loading ? 0.5 : 1,
+          }}>
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.89H9v3.56h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.65z" fill="#4285F4"/>
               <path d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26a5.43 5.43 0 0 1-3.04.85 5.38 5.38 0 0 1-5.07-3.72H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/>
@@ -326,10 +334,7 @@ export default function AuthPage() {
         {/* Forgot Password */}
         {activeTab === 'login' && (
           <p style={{textAlign:'center',marginTop:'16px',fontSize:'13px'}}>
-            <a
-              href={`/${locale}/auth/reset-password`}
-              style={{color:'#6C63FF',fontWeight:500,textDecoration:'none'}}
-            >
+            <a href={`/${locale}/auth/reset-password`} style={{color:'#6C63FF',fontWeight:500,textDecoration:'none'}}>
               שכחת סיסמא?
             </a>
           </p>
@@ -338,9 +343,9 @@ export default function AuthPage() {
         {/* Switch Tab */}
         <p style={{textAlign:'center',marginTop:'24px',fontSize:'14px',color:'#94A3B8'}}>
           {activeTab === 'login' ? (
-            <>אין לך חשבון? <button type="button" onClick={() => { setActiveTab('register'); setErrors({}); }} style={{color:'#6C63FF',fontWeight:600,border:'none',background:'none',cursor:'pointer',fontSize:'14px'}}>הירשם</button></>
+            <>אין לך חשבון? <button type="button" onClick={() => { setActiveTab('register'); setErrors({}); setServerError(''); }} style={{color:'#6C63FF',fontWeight:600,border:'none',background:'none',cursor:'pointer',fontSize:'14px'}}>הירשם</button></>
           ) : (
-            <>כבר יש לך חשבון? <button type="button" onClick={() => { setActiveTab('login'); setErrors({}); }} style={{color:'#6C63FF',fontWeight:600,border:'none',background:'none',cursor:'pointer',fontSize:'14px'}}>התחבר</button></>
+            <>כבר יש לך חשבון? <button type="button" onClick={() => { setActiveTab('login'); setErrors({}); setServerError(''); }} style={{color:'#6C63FF',fontWeight:600,border:'none',background:'none',cursor:'pointer',fontSize:'14px'}}>התחבר</button></>
           )}
         </p>
       </form>
