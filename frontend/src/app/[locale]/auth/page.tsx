@@ -141,7 +141,7 @@ export default function AuthPage() {
 
     try {
       if (activeTab === 'register') {
-        // Register via backend API
+        // Register via backend API first
         const res = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -154,10 +154,15 @@ export default function AuthPage() {
           throw new Error(data.error || 'ההרשמה נכשלה. נסה שוב.');
         }
         // Save JWT from registration
-        document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        if (data.data?.token) {
+          document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        }
+        // Redirect to email verification page
+        router.replace(`/${locale}/auth/verify-email`);
+        return;
       }
 
-      // Sign in with NextAuth credentials
+      // Sign in with NextAuth credentials (login)
       const result = await signIn('credentials', {
         email,
         password,

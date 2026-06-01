@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import { ConflictError, BadRequestError, NotFoundError } from '../lib/errors';
 import { registerSchema, loginSchema } from '../lib/validate';
+import { sendVerificationEmail } from '../lib/email';
 
 // In-memory reset codes (use Redis in production)
 const resetCodes = new Map<string, { code: string; expires: number }>();
@@ -22,10 +23,33 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     const user = await prisma.user.create({ data: { email, passwordHash, name } });
     const token = auth.signToken(user.id);
 
+    // Create email verification token (async — don't block response)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjklmnpqrstuvwxyz23456789';
+    let verifyToken = '';
+    for (let i = 0; i < 32; i++) {
+      verifyToken += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verifyToken,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      },
+    });
+
+    // Send verification email (async — don't block response)
+    const baseUrl = process.env.FRONTEND_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const verifyUrl = `${baseUrl}/auth/verify-email?token=${encodeURIComponent(verifyToken)}`;
+    sendVerificationEmail(user.email, user.name, verifyUrl).catch(err => {
+      console.error('[REGISTER] Failed to send verification email:', err);
+    });
+
     res.status(201).json({
       data: {
         user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, role: user.role, familyId: user.familyId },
         token,
+        emailVerificationSent: true,
       },
     });
   } catch (error) {
