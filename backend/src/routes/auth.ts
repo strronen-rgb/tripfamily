@@ -5,9 +5,7 @@ import { authMiddleware } from '../middleware/auth';
 import { ConflictError, BadRequestError, NotFoundError } from '../lib/errors';
 import { registerSchema, loginSchema } from '../lib/validate';
 import { sendVerificationEmail } from '../lib/email';
-
-// In-memory reset codes (use Redis in production)
-const resetCodes = new Map<string, { code: string; expires: number }>();
+import { resetCodes, verificationCodes } from '../lib/tokens';
 
 const router = Router();
 
@@ -23,19 +21,16 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     const user = await prisma.user.create({ data: { email, passwordHash, name } });
     const token = auth.signToken(user.id);
 
-    // Create email verification token (async — don't block response)
+    // Create email verification token (in-memory, valid 1 hour)
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjklmnpqrstuvwxyz23456789';
     let verifyToken = '';
     for (let i = 0; i < 32; i++) {
       verifyToken += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-
-    await prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token: verifyToken,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-      },
+    verificationCodes.set(user.email, {
+      token: verifyToken,
+      userId: user.id,
+      expires: Date.now() + 60 * 60 * 1000,
     });
 
     // Send verification email (async — don't block response)
