@@ -13,7 +13,7 @@ import hotelRoutes from './routes/hotels';
 import attractionRoutes from './routes/attractions';
 import timelineRoutes from './routes/timeline';
 import budgetRoutes from './routes/budget';
-import verifyEmailRoutes from './routes/verifyEmail';
+// import verifyEmailRoutes from './routes/verifyEmail';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -55,7 +55,7 @@ app.use('/api/hotels', hotelRoutes);
 app.use('/api/attractions', attractionRoutes);
 app.use('/api/timeline', timelineRoutes);
 app.use('/api/budget', budgetRoutes);
-app.use('/api/auth/verify', verifyEmailRoutes);
+// app.use('/api/auth/verify', verifyEmailRoutes);
 
 // 404 handler
 app.use((req, res) => {
