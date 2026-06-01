@@ -101,7 +101,21 @@ export default function AuthPage() {
     }
   }, []); // stable — uses refs
 
-  // Google SSO is now handled by button click (loads GIS on demand)
+  // Load Google Identity Services script ONCE on mount
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    if (window.google?.accounts?.id) return; // already loaded
+
+    const existingScript = document.getElementById('google-identity-script');
+    if (existingScript) return;
+
+    const script = document.createElement('script');
+    script.id = 'google-identity-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, [GOOGLE_CLIENT_ID]);
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -289,24 +303,17 @@ export default function AuthPage() {
             setServerError('Google OAuth לא מוגדר עדיין. הגדר NEXT_PUBLIC_GOOGLE_CLIENT_ID ב-.env');
             return;
           }
-          // Load GIS script if not loaded
+          // Wait for GIS script to load if not ready
           if (!window.google?.accounts?.id) {
-            const script = document.createElement('script');
-            script.id = 'google-identity-script';
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-            await new Promise<void>(resolve => { script.onload = () => resolve(); });
+            setServerError('טוען את Google... נסה שוב בעוד שנייה');
+            return;
           }
-          if (window.google?.accounts?.id) {
-            window.google.accounts.id.initialize({
-              client_id: GOOGLE_CLIENT_ID,
-              callback: handleGoogleCredential,
-              auto_select: false,
-            });
-            window.google.accounts.id.prompt();
-          }
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredential,
+            auto_select: false,
+          });
+          window.google.accounts.id.prompt();
         }} style={{
           width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
           color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
