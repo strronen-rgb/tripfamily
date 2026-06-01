@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/lib/useAuth';
 import { usePathname, useRouter } from 'next/navigation';
 
 const API_URL = 'https://tripfamily-api.onrender.com';
@@ -76,7 +76,7 @@ function SectionCard({ title, icon, items, onAdd, locale, tripId }: {
 }
 
 export default function TripDetailPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
@@ -92,7 +92,7 @@ export default function TripDetailPage() {
   const [statusUpdating, setStatusUpdating] = useState(false);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (authLoading) return;
     if (!session && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
@@ -185,7 +185,7 @@ export default function TripDetailPage() {
     }
   };
 
-  if (status === 'loading') return (
+  if (authLoading) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
       <div style={{textAlign:'center'}}>
         <div style={{fontSize:'48px',marginBottom:'16px'}}>✈️</div>

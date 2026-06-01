@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { ReactNode, useEffect, useState } from 'react';
 
 const tabs = [
@@ -20,24 +19,31 @@ export default function LocaleLayoutInner({
   locale: string;
 }) {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
   const currentPath = pathname.replace(`/${locale}`, '') || '/';
   const isAuthPage = currentPath === '/auth' || currentPath.startsWith('/auth/');
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tripfamily-api.onrender.com';
 
+  // Check auth via JWT token
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('tripfamily_token');
+    setIsAuthenticated(!!token);
+  }, []);
+
   // Redirect to auth if not authenticated (except on auth page)
   useEffect(() => {
-    if (status === 'loading') return;
-    if (!session && !isAuthPage && typeof window !== 'undefined') {
+    if (isAuthenticated === null) return; // still checking
+    if (!isAuthenticated && !isAuthPage && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
-  }, [session, status, isAuthPage, locale]);
+  }, [isAuthenticated, isAuthPage, locale]);
 
-  // Show loading while checking session
-  if (status === 'loading') {
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
     return (
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
         <div style={{textAlign:'center'}}>
@@ -59,7 +65,7 @@ export default function LocaleLayoutInner({
   }
 
   // Show login prompt if not authenticated and not on auth page
-  if (!session && !isAuthPage) {
+  if (!isAuthenticated && !isAuthPage) {
     return (
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl',padding:'32px'}}>
         <div style={{textAlign:'center',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'20px',padding:'32px',maxWidth:'400px'}}>
@@ -74,11 +80,15 @@ export default function LocaleLayoutInner({
     );
   }
 
-  // Check if user needs email verification
-  const userEmail = session?.user?.email;
+  // Get user email from localStorage for verification banner
+  let userEmail: string | null = null;
+  try {
+    const savedUser = typeof window !== 'undefined' ? localStorage.getItem('tripfamily_user') : null;
+    if (savedUser) userEmail = JSON.parse(savedUser)?.email || null;
+  } catch {}
+
   const needsVerification = userEmail && !isAuthPage;
 
-  // Resend verification email
   async function handleResendVerification() {
     if (!userEmail) return;
     setResending(true);

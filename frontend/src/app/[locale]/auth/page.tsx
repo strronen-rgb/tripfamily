@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, FormEvent, useEffect, useCallback, useRef } from 'react';
-import { signIn, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 
 type Tab = 'login' | 'register';
@@ -18,10 +17,6 @@ declare global {
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
           }) => void;
-          renderButton: (
-            element: HTMLElement | null,
-            options: { theme: string; size: string; width: string; text: string; shape: string }
-          ) => void;
           prompt: () => void;
         };
       };
@@ -32,7 +27,6 @@ declare global {
 export default function AuthPage() {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
   const locale = pathname.split('/')[1] || 'he';
   const [activeTab, setActiveTab] = useState<Tab>('login');
   const [name, setName] = useState('');
@@ -42,18 +36,19 @@ export default function AuthPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [loggedIn, setLoggedIn] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tripfamily-api.onrender.com';
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
-  // Redirect if already logged in
+  // Check if already logged in
   useEffect(() => {
-    if (session) {
+    const token = localStorage.getItem('tripfamily_token');
+    if (token) {
       router.replace(`/${locale}`);
     }
-  }, [session, locale, router]);
+  }, [locale, router]);
 
-  // Store latest values in refs so Google callback always has fresh data
   const API_URL_REF = useRef(API_URL);
   const localeRef = useRef(locale);
   const routerRef = useRef(router);
@@ -61,7 +56,7 @@ export default function AuthPage() {
   localeRef.current = locale;
   routerRef.current = router;
 
-  // Handle Google credential response — stable callback for GIS
+  // Handle Google credential response
   const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
     setLoading(true);
     setServerError('');
@@ -78,33 +73,20 @@ export default function AuthPage() {
         throw new Error(data.error || 'ההתחברות עם Google נכשלה');
       }
 
-      // Store JWT in cookie for API requests
-      document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-
-      // Create NextAuth session (custom google-oauth provider)
-      const result = await signIn('google-oauth', {
-        token: data.data.token,
-        userId: data.data.user.id,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        // NextAuth session failed but JWT is saved — still proceed
-        console.warn('NextAuth session error:', result.error);
-      }
-
+      localStorage.setItem('tripfamily_token', data.data.token);
+      localStorage.setItem('tripfamily_user', JSON.stringify(data.data.user));
       routerRef.current.replace(`/${localeRef.current}`);
     } catch (err: any) {
       setServerError(err.message || 'שגיאה בהתחברות עם Google. נסה שוב.');
     } finally {
       setLoading(false);
     }
-  }, []); // stable — uses refs
+  }, []);
 
   // Load Google Identity Services script ONCE on mount
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
-    if (window.google?.accounts?.id) return; // already loaded
+    if (window.google?.accounts?.id) return;
 
     const existingScript = document.getElementById('google-identity-script');
     if (existingScript) return;
@@ -137,7 +119,7 @@ export default function AuthPage() {
 
     try {
       if (activeTab === 'register') {
-        // Step 1: Register via backend API
+        // Register via backend API
         const res = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -150,40 +132,32 @@ export default function AuthPage() {
           throw new Error(data.error || 'ההרשמה נכשלה. נסה שוב.');
         }
 
-        // Step 2: Auto-login with NextAuth credentials
-        const loginResult = await signIn('credentials', {
-          email,
-          password,
-          redirect: false,
+        // Auto-login with credentials
+        const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
+        const loginData = await loginRes.json();
+        if (!loginRes.ok) throw new Error('ההרשמה הצליחה אך ההתחברות נכשלה. נסה להתחבר ידנית.');
 
-        if (loginResult?.error) {
-          throw new Error('ההרשמה הצליחה אך ההתחברות נכשלה. נסה להתחבר ידנית.');
-        }
-
-        // Step 3: Redirect to home — verification banner will show if email not verified
+        localStorage.setItem('tripfamily_token', loginData.data.token);
+        localStorage.setItem('tripfamily_user', JSON.stringify(loginData.data.user));
         router.replace(`/${locale}`);
         return;
       }
 
-      // Login flow
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
+      // Login
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'אימייל או סיסמה שגויים');
 
-      if (result?.error) {
-        if (result.error === 'CredentialsSignin') {
-          throw new Error('אימייל או סיסמה שגויים. נסה שוב.');
-        }
-        throw new Error('ההתחברות נכשלה. בדוק את הפרטים ונסה שוב.');
-      }
-
-      if (!result?.ok) {
-        throw new Error('ההתחברות נכשלה. נסה שוב מאוחר יותר.');
-      }
-
+      localStorage.setItem('tripfamily_token', data.data.token);
+      localStorage.setItem('tripfamily_user', JSON.stringify(data.data.user));
       router.replace(`/${locale}`);
     } catch (err: any) {
       setServerError(err.message || 'אירעה שגיאה. נסו שוב.');
@@ -241,14 +215,12 @@ export default function AuthPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} style={{flex:1,padding:'0 16px'}}>
-        {/* Server Error */}
         {serverError && (
           <div style={{marginBottom:'16px',padding:'12px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px'}}>
             <p style={{color:'#EF4444',fontSize:'12px',textAlign:'center',margin:0}}>{serverError}</p>
           </div>
         )}
 
-        {/* Name (register only) */}
         {activeTab === 'register' && (
           <div style={{marginBottom:'16px'}}>
             <label style={labelStyle}>שם מלא</label>
@@ -257,21 +229,18 @@ export default function AuthPage() {
           </div>
         )}
 
-        {/* Email */}
         <div style={{marginBottom:'16px'}}>
           <label style={labelStyle}>אימייל</label>
           <input type="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" style={{...inputStyle, textAlign:'left'}} />
           {errors.email && <p style={{color:'#EF4444',fontSize:'12px',margin:'4px 0 0 4px'}}>{errors.email}</p>}
         </div>
 
-        {/* Password */}
         <div style={{marginBottom:'16px'}}>
           <label style={labelStyle}>סיסמה</label>
           <input type="password" dir="ltr" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" style={{...inputStyle, textAlign:'left'}} />
           {errors.password && <p style={{color:'#EF4444',fontSize:'12px',margin:'4px 0 0 4px'}}>{errors.password}</p>}
         </div>
 
-        {/* Confirm Password (register only) */}
         {activeTab === 'register' && (
           <div style={{marginBottom:'16px'}}>
             <label style={labelStyle}>אימות סיסמה</label>
@@ -280,7 +249,6 @@ export default function AuthPage() {
           </div>
         )}
 
-        {/* Submit */}
         <button type="submit" disabled={loading} style={{
           width:'100%',marginTop:'32px',padding:'14px',background:'#6C63FF',color:'#fff',
           fontWeight:700,border:'none',borderRadius:'12px',fontSize:'16px',cursor:'pointer',
@@ -298,12 +266,11 @@ export default function AuthPage() {
         </div>
 
         {/* Google SSO */}
-        <button type="button" disabled={loading} onClick={async () => {
+        <button type="button" disabled={loading} onClick={() => {
           if (!GOOGLE_CLIENT_ID) {
             setServerError('Google OAuth לא מוגדר עדיין. הגדר NEXT_PUBLIC_GOOGLE_CLIENT_ID ב-.env');
             return;
           }
-          // Wait for GIS script to load if not ready
           if (!window.google?.accounts?.id) {
             setServerError('טוען את Google... נסה שוב בעוד שנייה');
             return;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/lib/useAuth';
 import { usePathname, useRouter } from 'next/navigation';
 const API_URL = 'https://tripfamily-api.onrender.com';
 
@@ -25,7 +25,7 @@ interface Trip {
 }
 
 export default function TripsPage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
@@ -38,7 +38,7 @@ export default function TripsPage() {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>('date');
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (authLoading) return;
     if (!session && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
@@ -102,7 +102,7 @@ export default function TripsPage() {
     return STATUS_OPTIONS.find(s => s.value === statusValue) || STATUS_OPTIONS[0];
   };
 
-  if (status === 'loading') return (
+  if (authLoading) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
       <div style={{textAlign:'center'}}>
         <div style={{fontSize:'48px',marginBottom:'16px',animation:'pulse 1.5s ease-in-out infinite'}}>✈️</div>

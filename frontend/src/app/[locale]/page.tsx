@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/lib/useAuth';
 import { usePathname } from 'next/navigation';
 
 const API_URL = 'https://tripfamily-api.onrender.com';
@@ -18,7 +18,7 @@ interface TripSummary {
 }
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'he';
 
@@ -28,7 +28,7 @@ export default function HomePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (authLoading) return;
     if (!session) return;
 
     const fetchData = async () => {
@@ -66,7 +66,7 @@ export default function HomePage() {
     fetchData();
   }, [session, status, locale]);
 
-  if (status === 'loading' || (loading && session)) {
+  if (authLoading || (loading && session)) {
     return (
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
         <div style={{textAlign:'center'}}>
@@ -88,7 +88,7 @@ export default function HomePage() {
     <div style={{minHeight:'100vh',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl'}}>
       <header style={{position:'sticky',top:0,zIndex:40,background:'rgba(26,26,46,0.9)',backdropFilter:'blur(16px)',borderBottom:'1px solid rgba(255,255,255,0.08)',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <h1 style={{fontSize:'20px',fontWeight:700,color:'#6C63FF',margin:0}}>✈️ TripFamily</h1>
-        <span style={{fontSize:'12px',color:'#94A3B8'}}>{(session.user as any)?.name || session.user?.name || 'משתמש'}</span>
+        <span style={{fontSize:'12px',color:'#94A3B8'}}>{(user as any)?.name || user?.name || 'משתמש'}</span>
       </header>
 
       <section style={{padding:'32px 16px',textAlign:'center',background:'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(255,107,107,0.1) 100%)'}}>

@@ -1,12 +1,12 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { useAuth } from '@/lib/useAuth';
 import Image from 'next/image';
 
 export default function ProfilePage() {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'he';
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   const menuItems = [
     { icon:'👤', label:'פרופיל אישי', href:`/${locale}/profile/edit` },
@@ -27,12 +27,12 @@ export default function ProfilePage() {
         {/* Profile Card */}
         <div style={{background:'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(255,107,107,0.1))',border:'1px solid rgba(108,99,255,0.2)',borderRadius:'20px',padding:'24px',marginBottom:'24px',textAlign:'center'}}>
           <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#252540',margin:'0 auto 12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'36px',border:'3px solid #6C63FF',overflow:'hidden'}}>
-            {session?.user?.image ? (
-              <Image src={session.user.image} alt="" width={80} height={80} style={{objectFit:'cover'}} />
+            {user?.image ? (
+              <Image src={user.image} alt="" width={80} height={80} style={{objectFit:'cover'}} />
             ) : '👤'}
           </div>
-          <h2 style={{fontSize:'20px',fontWeight:700,margin:'0 0 4px 0'}}>{session?.user?.name || 'אורח'}</h2>
-          <p style={{fontSize:'14px',color:'#94A3B8',margin:'0 0 16px 0'}}>{session?.user?.email || ''}</p>
+          <h2 style={{fontSize:'20px',fontWeight:700,margin:'0 0 4px 0'}}>{user?.name || 'אורח'}</h2>
+          <p style={{fontSize:'14px',color:'#94A3B8',margin:'0 0 16px 0'}}>{user?.email || ''}</p>
           <div style={{display:'flex',gap:'8px',justifyContent:'center',flexWrap:'wrap'}}>
             <span style={{padding:'4px 12px',background:'rgba(108,99,255,0.15)',color:'#6C63FF',borderRadius:'12px',fontSize:'12px',fontWeight:500}}>משתמש</span>
           </div>
