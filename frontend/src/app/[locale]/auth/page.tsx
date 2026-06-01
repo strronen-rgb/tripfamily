@@ -123,6 +123,19 @@ export default function AuthPage() {
           auto_select: false,
           cancel_on_tap_outside: true,
         });
+        // Render button into the div after a small delay to ensure DOM is ready
+        setTimeout(() => {
+          const btnDiv = document.getElementById('google-signin-button');
+          if (btnDiv) {
+            window.google!.accounts.id.renderButton(btnDiv, {
+              theme: 'outline',
+              size: 'large',
+              width: '300',
+              text: 'signin_with',
+              shape: 'pill',
+            });
+          }
+        }, 100);
       }
     };
   }, [GOOGLE_CLIENT_ID, handleGoogleCredential]);
