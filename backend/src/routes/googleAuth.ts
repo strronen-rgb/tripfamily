@@ -107,7 +107,11 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     const profile = await verifyGoogleToken(credential);
-    const user = await findOrCreateGoogleUser(profile);
+    const user = await findOrCreateGoogleUser({
+      email: profile.email,
+      name: profile.name || profile.email.split('@')[0],
+      image: profile.picture,
+    });
     const token = auth.signToken(user.id);
 
     res.json({
