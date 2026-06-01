@@ -101,44 +101,7 @@ export default function AuthPage() {
     }
   }, []); // stable — uses refs
 
-  // Load Google Identity Services script
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
-
-    const existingScript = document.getElementById('google-identity-script');
-    if (existingScript) return;
-
-    const script = document.createElement('script');
-    script.id = 'google-identity-script';
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    script.onload = () => {
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleCredential,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-        // Render button into the div after a small delay to ensure DOM is ready
-        setTimeout(() => {
-          const btnDiv = document.getElementById('google-signin-button');
-          if (btnDiv) {
-            window.google!.accounts.id.renderButton(btnDiv, {
-              theme: 'outline',
-              size: 'large',
-              width: '300',
-              text: 'signin_with',
-              shape: 'pill',
-            });
-          }
-        }, 100);
-      }
-    };
-  }, [GOOGLE_CLIENT_ID, handleGoogleCredential]);
+  // Google SSO is now handled by button click (loads GIS on demand)
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -321,28 +284,43 @@ export default function AuthPage() {
         </div>
 
         {/* Google SSO */}
-        {GOOGLE_CLIENT_ID ? (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div id="google-signin-button" />
-          </div>
-        ) : (
-          <button type="button" disabled={loading} onClick={() => {
+        <button type="button" disabled={loading} onClick={async () => {
+          if (!GOOGLE_CLIENT_ID) {
             setServerError('Google OAuth לא מוגדר עדיין. הגדר NEXT_PUBLIC_GOOGLE_CLIENT_ID ב-.env');
-          }} style={{
-            width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
-            color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
-            display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
-            opacity: loading ? 0.5 : 1,
-          }}>
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.89H9v3.56h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.65z" fill="#4285F4"/>
-              <path d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26a5.43 5.43 0 0 1-3.04.85 5.38 5.38 0 0 1-5.07-3.72H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/>
-              <path d="M3.93 10.71a5.38 5.38 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l2.97-2.33z" fill="#FBBC05"/>
-              <path d="M9 3.58a4.86 4.86 0 0 1 3.44 1.35l2.58-2.58A8.65 8.65 0 0 0 9 0a9 9 0 0 0-8.04 4.96l2.97 2.33A5.38 5.38 0 0 1 9 3.58z" fill="#EA4335"/>
-            </svg>
-            התחברות עם Google
-          </button>
-        )}
+            return;
+          }
+          // Load GIS script if not loaded
+          if (!window.google?.accounts?.id) {
+            const script = document.createElement('script');
+            script.id = 'google-identity-script';
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+            await new Promise<void>(resolve => { script.onload = () => resolve(); });
+          }
+          if (window.google?.accounts?.id) {
+            window.google.accounts.id.initialize({
+              client_id: GOOGLE_CLIENT_ID,
+              callback: handleGoogleCredential,
+              auto_select: false,
+            });
+            window.google.accounts.id.prompt();
+          }
+        }} style={{
+          width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
+          color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
+          display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+          opacity: loading ? 0.5 : 1,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.89H9v3.56h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.65z" fill="#4285F4"/>
+            <path d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26a5.43 5.43 0 0 1-3.04.85 5.38 5.38 0 0 1-5.07-3.72H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/>
+            <path d="M3.93 10.71a5.38 5.38 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l2.97-2.33z" fill="#FBBC05"/>
+            <path d="M9 3.58a4.86 4.86 0 0 1 3.44 1.35l2.58-2.58A8.65 8.65 0 0 0 9 0a9 9 0 0 0-8.04 4.96l2.97 2.33A5.38 5.38 0 0 1 9 3.58z" fill="#EA4335"/>
+          </svg>
+          התחברות עם Google
+        </button>
 
         {/* Forgot Password */}
         {activeTab === 'login' && (
