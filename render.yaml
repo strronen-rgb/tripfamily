@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     healthCheckPath: /api/health
-    buildCommand: cd backend && rm -rf node_modules && TMPDIR=/var/tmp npm install 2>&1 && npx prisma generate && npm run build
-    startCommand: cd backend && npx prisma migrate deploy 2>/dev/null || npx prisma db push 2>/dev/null || true && node dist/index.js
+    buildCommand: cd backend && TMPDIR=/var/tmp npm install && npx prisma generate && npm run build
+    startCommand: cd backend && npx prisma db push --skip-generate 2>/dev/null; node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production
