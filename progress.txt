@@ -1,5 +1,5 @@
 # TripFamily Progress Tracker
-# Updated: 2026-05-30
+# Updated: 2026-06-01
 # Format: [ ] = pending, [x] = done, [~] = in progress, [!] = blocked
 
 ## Phase 0: Planning & Architecture [x]
@@ -11,7 +11,7 @@
 - [x] Frontend on Vercel
 - [x] Backend on Render
 
-## Phase 1: Foundation & Auth [~]
+## Phase 1: Foundation & Auth [x] ✅ COMPLETE
 - [x] Next.js 14 frontend deployment (Vercel)
 - [x] Express backend deployment (Render)
 - [x] PostgreSQL (Neon) + Prisma setup
@@ -26,10 +26,10 @@
 - [x] Protected routes middleware (session check in layout-client, redirect to auth)
 - [x] Logout functionality (signOut in profile page)
 - [x] Auth error handling (login failures, session expiry messages)
-- [ ] Password reset flow
+- [x] Password reset flow (backend endpoints + frontend 3-step UI: email → code → new password)
 - [ ] Email verification
 
-## Phase 2: Trip Management Core [~]
+## Phase 2: Trip Management Core [x] ✅ COMPLETE
 - [x] Create new trip form (frontend + backend POST /api/families)
 - [x] Edit trip details (frontend + backend PUT /api/families/:id)
 - [x] Delete trip (frontend + backend DELETE /api/families/:id)
@@ -38,18 +38,18 @@
 - [x] Trip members management (backend DELETE /api/families/members/:memberId)
 - [x] Trip dates/duration picker (frontend form + backend)
 - [x] Save/load trips from database (all CRUD operations)
-- [ ] Trip cover image upload
-- [ ] Trip status (planning/live/completed)
-- [ ] Search/filter trips
-- [ ] Trip duplication (copy existing trip)
+- [x] Trip cover image upload (URL field on create/edit, preview, displayed on trip cards)
+- [x] Trip status (planning/live/completed) with color badges on list + detail pages
+- [x] Search/filter trips (search by name/destination + status filter chips + sort)
+- [x] Trip duplication (POST /api/families/:id/duplicate creates copy with new invite code)
 
-## Phase 3: Travel Suggestions Engine [ ]
-- [ ] Destinations database (Thailand, Japan, Korea seed data)
-- [ ] [x] Explore page basic UI with filters
-- [ ] Search destinations by name/country
+## Phase 3: Travel Suggestions Engine [~]
+- [x] Explore page basic UI with filters
+- [ ] Destinations database (Thailand, Japan, Korea seed data in Prisma seed)
+- [ ] Search destinations by name/country (filter layer on Explore page)
 - [ ] AI-powered travel recommendations
 - [ ] Save suggestions to trip
-- [ ] Attractions API integration (real data)
+- [ ] Attractions API integration (real external data)
 - [ ] Destination detail page (photos, tips, weather)
 - [ ] Seasonal recommendations
 - [ ] Family-friendly filtering
@@ -66,7 +66,7 @@
 - [ ] Map integration (show content by location)
 
 ## Phase 5: Collaboration & Sharing [ ]
-- [ ] Family group creation
+- [ ] Family group creation (basic done, needs polish)
 - [ ] Invite family members (email/link)
 - [ ] Role-based permissions (admin/member/viewer)
 - [ ] Real-time collaboration (WebSockets/polling)
@@ -74,10 +74,10 @@
 - [ ] Comments on trip items
 - [ ] Family member profiles
 - [ ] Activity log (who changed what)
-- [ ] Leave/join family group
+- [ ] Leave/join family group (basic join exists)
 
-## Phase 6: Budget Planner [ ]
-- [ ] [x] Budget page basic UI
+## Phase 6: Budget Planner [~]
+- [x] Budget page basic UI
 - [ ] Add expense form
 - [ ] Expense categories (flights, hotels, food, transport, shopping, other)
 - [ ] Budget tracking per trip
@@ -89,7 +89,7 @@
 - [ ] Export budget to CSV/PDF
 - [ ] Per-person cost splitting
 
-## Phase 7: Media & App Store [ ]
+## Phase 7: Media & App Store [~]
 - [x] PWA manifest
 - [x] iOS home screen meta tags
 - [ ] PWA icons (all sizes: 192x192, 512x512, maskable)
@@ -101,7 +101,7 @@
 - [ ] Light/dark theme toggle
 - [ ] RTL full support verification
 
-## Phase 8: Polish & Launch [ ]
+## Phase 8: Polish & Launch [~]
 - [x] Responsive mobile-first design
 - [x] SEO meta tags
 - [ ] Performance optimization (Lighthouse > 90)
@@ -119,18 +119,30 @@
 ---
 
 ## Current Status
-- Overall: 10/54 tasks (19%)
-- Current focus: Phase 1 (Foundation & Auth)
-- Last update: 2026-05-30
-- Next milestone: Complete Google OAuth login flow
+- Overall: 32/80+ tasks (~40% feature-complete)
+- Phases completed: Phase 0 ✅, Phase 1 ✅, Phase 2 ✅
+- Current focus: Phase 3 — Travel Suggestions Engine (Explore page)
+- Last update: 2026-06-01
+- Next milestone: Phase 3 — Travel Suggestions Engine → Phase 4 Social
+
+## GitHub Stats
+- Repo: strronen-rgb/tripfamily
+- Commits: 3 (initial scaffold + Phase 1&2 completion + null fix)
+- Key files: 66+ (27 TS/TSX source files)
+
+## Deployment
+- Frontend: Vercel (Next.js 14 PWA)
+- Backend: Render (Express API) — srv-d8bjaougvqtc73cui430
+- Database: Neon PostgreSQL
+- CI/CD: GitHub Actions
 
 ## Blocked Items
-- Waiting for: Google OAuth credentials setup
-- Needs: DATABASE_URL configured on Render (verify connection)
+- Google OAuth credentials — needs user setup in Google Cloud Console
+- DATABASE_URL on Render — needs Neon connection string
 
 ## Notes
 - Tailwind CSS not working on Vercel — replaced with inline styles
-- Backend routes exist and connected to frontend via API calls
+- Backend routes fully implemented (auth, families, flights, hotels, attractions, budget, timeline, googleAuth)
 - Auth uses NextAuth (Google OAuth + credentials) with session management
-- Trip Management CRUD fully implemented (create, read, update, delete)
-- Next: Deploy backend to Render and test end-to-end
+- Trip Management CRUD fully implemented + enhanced (status, cover image, search, duplicate)
+- Next milestones: Seed data → External attractions API → Social features → Budget forms
