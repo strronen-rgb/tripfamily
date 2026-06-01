@@ -3,8 +3,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-
 const API_URL = 'https://tripfamily-api.onrender.com';
 
 const STATUS_OPTIONS = [
