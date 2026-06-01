@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     healthCheckPath: /api/health
-    buildCommand: cd backend && TMPDIR=/var/tmp npm install && npx prisma generate && npm run build
+    buildCommand: cd backend && rm -rf node_modules package-lock.json && TMPDIR=/var/tmp npm install --ignore-scripts && npx prisma generate && npm run build
     startCommand: cd backend && npx prisma migrate deploy && node dist/index.js
     envVars:
       - key: NODE_ENV
