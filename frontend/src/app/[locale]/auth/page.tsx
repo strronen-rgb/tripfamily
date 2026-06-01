@@ -1,14 +1,38 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, FormEvent, useEffect, useCallback } from 'react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 
 type Tab = 'login' | 'register';
 
+// Google Identity Services types
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string; select_by: string }) => void;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
+          }) => void;
+          renderButton: (
+            element: HTMLElement | null,
+            options: { theme: string; size: string; width: string; text: string; shape: string }
+          ) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
 export default function AuthPage() {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
   const locale = pathname.split('/')[1] || 'he';
   const [activeTab, setActiveTab] = useState<Tab>('login');
   const [name, setName] = useState('');
@@ -18,6 +42,84 @@ export default function AuthPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tripfamily-api.onrender.com';
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (session) {
+      router.replace(`/${locale}`);
+    }
+  }, [session, locale, router]);
+
+  // Load Google Identity Services script
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+
+    const existingScript = document.getElementById('google-identity-script');
+    if (existingScript) return;
+
+    const script = document.createElement('script');
+    script.id = 'google-identity-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+      }
+    };
+  }, [GOOGLE_CLIENT_ID]);
+
+  // Handle Google credential response
+  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
+    setLoading(true);
+    setServerError('');
+
+    try {
+      // Send Google credential to our backend
+      const res = await fetch(`${API_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'ההתחברות עם Google נכשלה');
+      }
+
+      // Store JWT token in cookie for API requests
+      document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+      // Also sign in with NextAuth (session strategy)
+      const result = await signIn('google-oauth', {
+        token: data.data.token,
+        userId: data.data.user.id,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        // NextAuth session failed but we have JWT — still proceed
+        console.warn('NextAuth session error:', result.error);
+      }
+
+      router.replace(`/${locale}`);
+    } catch (err: any) {
+      setServerError(err.message || 'שגיאה בהתחברות עם Google. נסה שוב.');
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, locale, router]);
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -36,10 +138,10 @@ export default function AuthPage() {
     if (!validate()) return;
     setLoading(true);
     setServerError('');
+
     try {
       if (activeTab === 'register') {
-        // Register via backend API first
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tripfamily-api.onrender.com';
+        // Register via backend API
         const res = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -47,43 +149,36 @@ export default function AuthPage() {
         });
         const data = await res.json();
         if (!res.ok) {
-          // Handle specific backend errors
           if (res.status === 409) throw new Error('האימייל כבר רשום במערכת. נסה להתחבר.');
           if (res.status === 400) throw new Error(data.error || 'נתונים לא תקינים. בדוק שוב.');
           throw new Error(data.error || 'ההרשמה נכשלה. נסה שוב.');
         }
+        // Save JWT from registration
+        document.cookie = `tripfamily_token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
       }
-      // Sign in with NextAuth
+
+      // Sign in with NextAuth credentials
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
+
       if (result?.error) {
-        // Handle specific NextAuth errors
         if (result.error === 'CredentialsSignin') {
           throw new Error('אימייל או סיסמה שגויים. נסה שוב.');
         }
         throw new Error('ההתחברות נכשלה. בדוק את הפרטים ונסה שוב.');
       }
+
       if (!result?.ok) {
         throw new Error('ההתחברות נכשלה. נסה שוב מאוחר יותר.');
       }
+
       router.replace(`/${locale}`);
     } catch (err: any) {
       setServerError(err.message || 'אירעה שגיאה. נסו שוב.');
     } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleGoogleLogin() {
-    setLoading(true);
-    setServerError('');
-    try {
-      await signIn('google', { callbackUrl: `/${locale}` });
-    } catch (err: any) {
-      setServerError('שגיאה בהתחברות עם Google. נסה שוב.');
       setLoading(false);
     }
   }
@@ -193,21 +288,35 @@ export default function AuthPage() {
           <div style={{flex:1,height:'1px',background:'rgba(255,255,255,0.08)'}} />
         </div>
 
-        {/* Google SSO */}
-        <button type="button" disabled={loading} onClick={handleGoogleLogin} style={{
-          width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
-          color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
-          display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
-          opacity: loading ? 0.5 : 1,
-        }}>
-          <svg width="18" height="18" viewBox="0 0 18 18">
-            <path d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.89H9v3.56h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.65z" fill="#4285F4"/>
-            <path d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26a5.43 5.43 0 0 1-3.04.85 5.38 5.38 0 0 1-5.07-3.72H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/>
-            <path d="M3.93 10.71a5.38 5.38 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l2.97-2.33z" fill="#FBBC05"/>
-            <path d="M9 3.58a4.86 4.86 0 0 1 3.44 1.35l2.58-2.58A8.65 8.65 0 0 0 9 0a9 9 0 0 0-8.04 4.96l2.97 2.33A5.38 5.38 0 0 1 9 3.58z" fill="#EA4335"/>
-          </svg>
-          התחברות עם Google
-        </button>
+        {/* Google SSO — rendered by Google Identity Services */}
+        {GOOGLE_CLIENT_ID ? (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div id="google-signin-button" />
+          </div>
+        ) : (
+          /* Fallback: custom Google button when no client ID configured */
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              setServerError('Google OAuth לא מוגדר עדיין. הגדר NEXT_PUBLIC_GOOGLE_CLIENT_ID ב-.env');
+            }}
+            style={{
+              width:'100%',padding:'12px',background:'#1A1A2E',border:'1px solid rgba(255,255,255,0.08)',
+              color:'#E8E8F0',fontSize:'14px',fontWeight:500,borderRadius:'12px',cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <path d="M17.64 9.2a10.34 10.34 0 0 0-.16-1.89H9v3.56h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.65z" fill="#4285F4"/>
+              <path d="M9 18a8.59 8.59 0 0 0 5.96-2.18l-2.92-2.26a5.43 5.43 0 0 1-3.04.85 5.38 5.38 0 0 1-5.07-3.72H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/>
+              <path d="M3.93 10.71a5.38 5.38 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l2.97-2.33z" fill="#FBBC05"/>
+              <path d="M9 3.58a4.86 4.86 0 0 1 3.44 1.35l2.58-2.58A8.65 8.65 0 0 0 9 0a9 9 0 0 0-8.04 4.96l2.97 2.33A5.38 5.38 0 0 1 9 3.58z" fill="#EA4335"/>
+            </svg>
+            התחברות עם Google
+          </button>
+        )}
 
         {/* Forgot Password */}
         {activeTab === 'login' && (

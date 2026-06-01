@@ -3,7 +3,7 @@ import * as auth from '../lib/auth';
 import { prisma } from '../lib/prisma';
 import { BadRequestError, UnauthorizedError } from '../lib/errors';
 
-// Minimal type for Google tokeninfo response
+// Minimal types for Google tokeninfo response
 interface GoogleTokenInfo {
   email?: string;
   name?: string;
@@ -13,7 +13,55 @@ interface GoogleTokenInfo {
   [key: string]: unknown;
 }
 
-const router = Router();
+interface GoogleCredentialPayload {
+  email: string;
+  name?: string;
+  picture?: string;
+  sub?: string;
+}
+
+async function verifyGoogleToken(credential: string): Promise<GoogleCredentialPayload> {
+  // Try Google's tokeninfo endpoint first
+  try {
+    const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
+    const googleRes = await fetch(tokenInfoUrl);
+    const tokenInfo = await googleRes.json() as GoogleTokenInfo;
+
+    if (tokenInfo.error_description) {
+      throw new UnauthorizedError('Google token verification failed: ' + String(tokenInfo.error_description));
+    }
+
+    // Verify audience if we have a client ID configured
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    if (googleClientId && tokenInfo.aud !== googleClientId) {
+      throw new UnauthorizedError('Token was not issued for this application');
+    }
+
+    if (!tokenInfo.email) {
+      throw new UnauthorizedError('Google token missing email');
+    }
+
+    return {
+      email: String(tokenInfo.email).toLowerCase(),
+      name: tokenInfo.name ? String(tokenInfo.name) : String(tokenInfo.email).split('@')[0],
+      picture: tokenInfo.picture ? String(tokenInfo.picture) : undefined,
+      sub: tokenInfo.aud ? String(tokenInfo.aud) : undefined,
+    };
+  } catch (e) {
+    if (e instanceof UnauthorizedError || e instanceof BadRequestError) throw e;
+    // Fallback: decode JWT payload directly (works when Google API is unreachable)
+    const parts = credential.split('.');
+    if (parts.length !== 3) throw new UnauthorizedError('Invalid Google token format');
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString()) as GoogleCredentialPayload;
+    if (!payload.email) throw new UnauthorizedError('Google token missing email');
+    return {
+      email: payload.email.toLowerCase(),
+      name: payload.name || payload.email.split('@')[0],
+      picture: payload.picture,
+      sub: payload.sub,
+    };
+  }
+}
 
 // Helper: find or create user from Google profile
 async function findOrCreateGoogleUser(profile: {
@@ -47,51 +95,18 @@ async function findOrCreateGoogleUser(profile: {
   return user;
 }
 
-// ── POST /api/auth/google — Verify Google ID token & issue JWT ──────────────
+const router = Router();
+
+// ── POST /api/auth/google — Verify Google ID token & issue JWT
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { credential, clientId } = req.body as { credential?: string; clientId?: string };
+    const { credential } = req.body as { credential?: string };
 
     if (!credential) {
       throw new BadRequestError('Google credential is required');
     }
 
-    let profile: { email: string; name: string; picture?: string };
-
-    try {
-      // Verify with Google's tokeninfo endpoint
-      const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
-      const googleRes = await fetch(tokenInfoUrl);
-      const tokenInfo = await googleRes.json() as GoogleTokenInfo;
-
-      if (tokenInfo.error_description) {
-        throw new UnauthorizedError('Google token verification failed: ' + String(tokenInfo.error_description));
-      }
-
-      // Verify the token was issued for our app
-      const googleClientId = process.env.GOOGLE_CLIENT_ID || clientId;
-      if (googleClientId && tokenInfo.aud !== googleClientId) {
-        throw new UnauthorizedError('Token was not issued for this application');
-      }
-
-      profile = {
-        email: String(tokenInfo.email),
-        name: String(tokenInfo.name || String(tokenInfo.email).split('@')[0]),
-        picture: tokenInfo.picture ? String(tokenInfo.picture) : undefined,
-      };
-    } catch (e) {
-      if (e instanceof UnauthorizedError || e instanceof BadRequestError) throw e;
-      // Fallback: decode JWT manually (less secure, but works without Google API call)
-      const parts = credential.split('.');
-      if (parts.length !== 3) throw new UnauthorizedError('Invalid Google token format');
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-      profile = {
-        email: payload.email,
-        name: payload.name || payload.email.split('@')[0],
-        picture: payload.picture,
-      };
-    }
-
+    const profile = await verifyGoogleToken(credential);
     const user = await findOrCreateGoogleUser(profile);
     const token = auth.signToken(user.id);
 
@@ -104,8 +119,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
           avatarUrl: user.avatarUrl,
           role: user.role,
           familyId: user.familyId,
+          isNewUser: !user.passwordHash && profile.name === user.name,
         },
         token,
+        isNewUser: !user.passwordHash && profile.name === user.name,
       },
     });
   } catch (error) {

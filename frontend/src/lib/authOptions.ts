@@ -1,15 +1,11 @@
 import { NextAuthOptions } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    }),
+    // Email + Password login
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -38,33 +34,42 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    // Google OAuth — verified by our backend
+    CredentialsProvider({
+      id: 'google-oauth',
+      name: 'google-oauth',
+      credentials: {
+        token: { label: 'Token', type: 'text' },
+        userId: { label: 'UserId', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.token) return null;
+        try {
+          const res = await fetch(`${API_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${credentials.token}` },
+          });
+          const data = await res.json();
+          if (!res.ok || !data.data?.user) return null;
+          return {
+            id: data.data.user.id,
+            email: data.data.user.email,
+            name: data.data.user.name,
+            image: data.data.user.avatarUrl,
+            token: credentials.token,
+          };
+        } catch {
+          return null;
+        }
+      },
+    }),
   ],
   session: { strategy: 'jwt' },
   pages: { signIn: '/auth' },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.accessToken = (user as any).token;
-      }
-      if (account?.provider === 'google' && account.id_token) {
-        try {
-          const res = await fetch(`${API_URL}/api/auth/google`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              credential: account.id_token,
-              clientId: process.env.GOOGLE_CLIENT_ID,
-            }),
-          });
-          const data = await res.json();
-          if (res.ok && data.data) {
-            token.id = data.data.user.id;
-            token.accessToken = data.data.token;
-          }
-        } catch {
-          // Silently fall back
-        }
       }
       return token;
     },
