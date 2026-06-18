@@ -29,11 +29,11 @@ export default function HomePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!session) return;
+    if (!user) return;
 
     const fetchData = async () => {
       try {
-        const token = (session as any)?.accessToken || '';
+        const token = (user as any)?.accessToken || '';
         const res = await fetch(`${API_URL}/api/families/my`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -64,9 +64,9 @@ export default function HomePage() {
       }
     };
     fetchData();
-  }, [session, status, locale]);
+  }, [user, authLoading, locale]);
 
-  if (authLoading || (loading && session)) {
+  if (authLoading || (loading && user)) {
     return (
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0F0F23',color:'#94A3B8',fontFamily:'Inter,system-ui,sans-serif'}}>
         <div style={{textAlign:'center'}}>
@@ -77,7 +77,7 @@ export default function HomePage() {
     );
   }
 
-  if (!session) return null;
+  if (!user) return null;
 
   const formatDate = (d?: string) => {
     if (!d) return '—';

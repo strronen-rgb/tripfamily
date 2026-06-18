@@ -124,7 +124,7 @@ export default function LocaleLayoutInner({
           direction: 'rtl',
         }}>
           <p style={{margin:'0 0 8px 0',color:'#E8E8F0',fontSize:'13px'}}>
-            📧 יש לאמת את האימייל שלך כדי להשתמש בכל הפיצ'רים
+            📧 יש לאמת את האימייל שלך כדי להשתמש בכל הפיצ&apos;רים
           </p>
           <button
             onClick={handleResendVerification}
