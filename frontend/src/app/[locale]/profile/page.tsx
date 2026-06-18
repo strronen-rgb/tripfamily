@@ -8,6 +8,12 @@ export default function ProfilePage() {
   const locale = pathname.split('/')[1] || 'he';
   const { user } = useAuth();
 
+  const handleLogout = () => {
+    localStorage.removeItem('tripfamily_user');
+    localStorage.removeItem('tripfamily_token');
+    window.location.href = `/${locale}/auth`;
+  };
+
   const menuItems = [
     { icon:'👤', label:'פרופיל אישי', href:`/${locale}/profile/edit` },
     { icon:'👨‍👩‍👧‍👦', label:'המשפחה שלי', href:`/${locale}/profile/family` },
@@ -49,7 +55,7 @@ export default function ProfilePage() {
         ))}
 
         {/* Logout */}
-        <button onClick={() => signOut({ callbackUrl: `/${locale}/auth` })} style={{
+        <button onClick={handleLogout} style={{
           width:'100%',marginTop:'24px',padding:'14px',background:'rgba(239,68,68,0.1)',
           border:'1px solid rgba(239,68,68,0.2)',color:'#EF4444',borderRadius:'12px',
           fontSize:'14px',fontWeight:600,cursor:'pointer',
