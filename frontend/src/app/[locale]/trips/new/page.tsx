@@ -10,7 +10,7 @@ const API_URL = 'https://tripfamily-api.onrender.com';
 const DESTINATION_OPTIONS = ['תאילנד', 'יפן', 'קוריאה', 'אחר'];
 
 export default function NewTripPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getToken } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
@@ -25,10 +25,10 @@ export default function NewTripPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!session && typeof window !== 'undefined') {
+    if (!user && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
-  }, [session, status, locale]);
+  }, [user, authLoading, locale]);
 
   const toggleDestination = (dest: string) => {
     setDestinations(prev =>
@@ -62,7 +62,7 @@ export default function NewTripPage() {
       const res = await fetch(`${API_URL}/api/families`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Authorization': `Bearer ${getToken() || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -98,7 +98,7 @@ export default function NewTripPage() {
     </div>
   );
 
-  if (!session) return null;
+  if (!user) return null;
 
   return (
     <div style={{minHeight:'100vh',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl'}}>

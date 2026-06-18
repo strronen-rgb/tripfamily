@@ -76,7 +76,7 @@ function SectionCard({ title, icon, items, onAdd, locale, tripId }: {
 }
 
 export default function TripDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getToken } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
@@ -93,20 +93,20 @@ export default function TripDetailPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!session && typeof window !== 'undefined') {
+    if (!user && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
-  }, [session, status, locale]);
+  }, [user, authLoading, locale]);
 
   useEffect(() => {
-    if (!session || !tripId) return;
+    if (!user || !tripId) return;
     const fetchTrip = async () => {
       setLoading(true);
       setError('');
       try {
         const res = await fetch(`${API_URL}/api/families/${tripId}`, {
           headers: {
-            'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+            'Authorization': `Bearer ${getToken() || ''}`,
             'Content-Type': 'application/json',
           },
         });
@@ -120,7 +120,7 @@ export default function TripDetailPage() {
       }
     };
     fetchTrip();
-  }, [session, tripId]);
+  }, [user, tripId]);
 
   const handleDelete = async () => {
     if (!trip) return;
@@ -129,7 +129,7 @@ export default function TripDetailPage() {
       const res = await fetch(`${API_URL}/api/families/${trip.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Authorization': `Bearer ${getToken() || ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -149,7 +149,7 @@ export default function TripDetailPage() {
       const res = await fetch(`${API_URL}/api/families/${trip.id}/duplicate`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Authorization': `Bearer ${getToken() || ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -171,7 +171,7 @@ export default function TripDetailPage() {
       const res = await fetch(`${API_URL}/api/families/${trip.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Authorization': `Bearer ${getToken() || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
@@ -194,7 +194,7 @@ export default function TripDetailPage() {
     </div>
   );
 
-  if (!session) return null;
+  if (!user) return null;
 
   const startDate = trip?.startDate || trip?.start_date;
   const endDate = trip?.endDate || trip?.end_date;

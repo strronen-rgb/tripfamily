@@ -25,7 +25,7 @@ interface Trip {
 }
 
 export default function TripsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getToken } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
@@ -39,18 +39,18 @@ export default function TripsPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!session && typeof window !== 'undefined') {
+    if (!user && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
-  }, [session, status, locale]);
+  }, [user, authLoading, locale]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!user) return;
     const fetchTrips = async () => {
       try {
         const res = await fetch(`${API_URL}/api/families/my`, {
           headers: {
-            'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+            'Authorization': `Bearer ${getToken() || ''}`,
             'Content-Type': 'application/json',
           },
         });
@@ -75,7 +75,7 @@ export default function TripsPage() {
       }
     };
     fetchTrips();
-  }, [session]);
+  }, [user]);
 
   // Filter + sort
   const filteredTrips = useMemo(() => {
@@ -111,7 +111,7 @@ export default function TripsPage() {
     </div>
   );
 
-  if (!session) return null;
+  if (!user) return null;
 
   const formatDate = (d?: string) => {
     if (!d) return '—';
