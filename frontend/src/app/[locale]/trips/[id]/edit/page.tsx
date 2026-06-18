@@ -9,7 +9,7 @@ const API_URL = 'https://tripfamily-api.onrender.com';
 const DESTINATION_OPTIONS = ['תאילנד', 'יפן', 'קוריאה', 'אחר'];
 
 export default function EditTripPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getToken } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'he';
@@ -28,19 +28,19 @@ export default function EditTripPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!session && typeof window !== 'undefined') {
+    if (!user && typeof window !== 'undefined') {
       window.location.href = `/${locale}/auth`;
     }
-  }, [session, status, locale]);
+  }, [user, authLoading, locale]);
 
   // Fetch existing trip data
   useEffect(() => {
-    if (!session || !tripId) return;
+    if (!user || !tripId) return;
     const fetchTrip = async () => {
       try {
         const res = await fetch(`${API_URL}/api/families/${tripId}`, {
           headers: {
-            'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+            'Authorization': `Bearer ${getToken() || ''}`,
             'Content-Type': 'application/json',
           },
         });
@@ -60,7 +60,7 @@ export default function EditTripPage() {
       }
     };
     fetchTrip();
-  }, [session, tripId]);
+  }, [user, tripId]);
 
   const toggleDestination = (dest: string) => {
     setDestinations(prev =>
@@ -94,7 +94,7 @@ export default function EditTripPage() {
       const res = await fetch(`${API_URL}/api/families/${tripId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+          'Authorization': `Bearer ${getToken() || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -129,7 +129,7 @@ export default function EditTripPage() {
     </div>
   );
 
-  if (!session) return null;
+  if (!user) return null;
 
   return (
     <div style={{minHeight:'100vh',background:'#0F0F23',color:'#E8E8F0',fontFamily:'Inter,system-ui,sans-serif',direction:'rtl'}}>
